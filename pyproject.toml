@@ -1,0 +1,23 @@
+[project]
+name = "fastsyftbox"
+version = "0.1.0"
+description = "FastAPI + SyftBox"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.115.12",
+    "uvicorn>=0.34.2",
+    "syft-event>=0.2.1",
+    "syft-core>=0.2.3",
+    "typer>=0.4.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+fastsyftbox = "fastsyftbox.cli:main"
+
+[tool.hatch.build]
+packages = ["fastsyftbox"]
