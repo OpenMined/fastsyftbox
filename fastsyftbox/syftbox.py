@@ -1,13 +1,20 @@
-from fastapi import FastAPI
-from syft_event import SyftEvents
-from syft_core import SyftClientConfig, Client as SyftboxClient
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
-import asyncio
+
+from fastapi import FastAPI
+from syft_core import Client as SyftboxClient
+from syft_core import SyftClientConfig
+from syft_event import SyftEvents
 
 
 class Syftbox:
-    def __init__(self, app: FastAPI, name: str, data_dir: str = "./data", config: SyftClientConfig = None):
+    def __init__(
+        self,
+        app: FastAPI,
+        name: str,
+        config: SyftClientConfig = None,
+    ):
         self.name = name
         self.app = app
 
@@ -17,7 +24,9 @@ class Syftbox:
 
         # setup app data directory
         self.current_dir = Path(__file__).parent
-        self.app_data_dir = Path(self.client.config.data_dir) / "private" / "app_data" /  name
+        self.app_data_dir = (
+            Path(self.client.config.data_dir) / "private" / "app_data" / name
+        )
         self.app_data_dir.mkdir(parents=True, exist_ok=True)
 
         # Setup event system
