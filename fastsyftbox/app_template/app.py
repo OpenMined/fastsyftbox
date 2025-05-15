@@ -10,7 +10,7 @@ def read_root():
 
 syftbox = Syftbox(
     app=app,
-    app_name=Path(__file__).resolve().parent.name
+    name=Path(__file__).resolve().parent.name
 )
 
 # Build your DTN RPC endpoints available on syft://{datasite}/app_data/{app_name}/rpc/ping
