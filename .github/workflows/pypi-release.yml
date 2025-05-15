@@ -34,7 +34,7 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add pyproject.toml fastsyftbox/__init__.py
+          git add pyproject.toml fastsyftbox/__init__.py .bumpversion.cfg
           git commit -m "Bump version to $(grep 'version = ' pyproject.toml | cut -d'"' -f2)"
           git push 
 
