@@ -1,0 +1,51 @@
+name: Bump Version
+
+on:
+  pull_request:
+    branches:
+      - main
+      types: [closed]
+
+jobs:
+  publish-to-pypi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install bump2version
+        run: pip install bump2version
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'github-actions@github.com'
+
+      - name: Bump version
+        run: |
+          bump2version --config-file .bumpversion.cfg --allow-dirty patch
+
+      - name: Commit and push changes
+        run: |
+          git add pyproject.toml fastsyftbox/__init__.py
+          git commit -m "Bump version to $(grep 'version = ' pyproject.toml | cut -d'"' -f2)"
+          git push 
+
+      - name: Install Twine
+        run: |
+          pip install twine
+          python -m build
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.FASTSYFTBOX_PYPI_TOKEN }}
+        run: |
+          twine upload dist/*

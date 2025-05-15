@@ -1,6 +1,6 @@
 [project]
 name = "fastsyftbox"
-version = "0.1.1"
+version = "0.1.2"
 description = "FastAPI + SyftBox"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -21,3 +21,9 @@ fastsyftbox = "fastsyftbox.cli:main"
 
 [tool.hatch.build]
 packages = ["fastsyftbox"]
+
+
+[tool.ruff]
+line-length = 88
+lint.select = ["E", "F", "I"]
+lint.fixable = ["ALL"]
