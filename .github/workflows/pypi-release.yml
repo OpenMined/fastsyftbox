@@ -20,8 +20,8 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install bump2version
-        run: pip install bump2version
+      - name: Install packages
+        run: pip install twine build bump2version
 
       - name: Configure Git
         run: |
@@ -34,13 +34,12 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add pyproject.toml fastsyftbox/__init__.py
+          git add pyproject.toml fastsyftbox/__init__.py .bumpversion.cfg
           git commit -m "Bump version to $(grep 'version = ' pyproject.toml | cut -d'"' -f2)"
           git push 
 
-      - name: Install Twine
+      - name: Build package
         run: |
-          pip install twine
           python -m build
 
       - name: Publish to PyPI
