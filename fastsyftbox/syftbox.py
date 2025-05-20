@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -48,3 +49,16 @@ class Syftbox:
     def on_request(self, path: str):
         """Decorator to register an on_request handler with the SyftEvents box."""
         return self.box.on_request(path)
+
+    def publish_file_path(self, local_path: Path, in_datasite_path: Path):
+        publish_path = self.client.datasite_path / in_datasite_path
+        publish_path.mkdir(parents=True, exist_ok=True)
+
+        shutil.copy2(local_path, publish_path)
+
+    def publish_contents(self, file_contents: str, in_datasite_path: Path):
+        publish_path = self.client.datasite_path / in_datasite_path
+        publish_path.parent.mkdir(parents=True, exist_ok=True)
+        print("publish_path", publish_path, in_datasite_path)
+        with open(publish_path, "w") as file:
+            file.write(file_contents)
