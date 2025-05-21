@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -48,3 +49,63 @@ class Syftbox:
     def on_request(self, path: str):
         """Decorator to register an on_request handler with the SyftEvents box."""
         return self.box.on_request(path)
+
+    def publish_file_path(self, local_path: Path, in_datasite_path: Path):
+        publish_path = self.client.datasite_path / in_datasite_path
+        publish_path.parent.mkdir(parents=True, exist_ok=True)
+
+        shutil.copy2(local_path, publish_path)
+
+    def publish_contents(self, file_contents: str, in_datasite_path: Path):
+        publish_path = self.client.datasite_path / in_datasite_path
+        publish_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(publish_path, "w") as file:
+            file.write(file_contents)
+
+    def publish_debug_tool(self):
+        """
+        Publishes the dynamically generated RPC debug tool HTML page to the datasite.
+        """
+        # Generate the RPC debug page content dynamically
+        js_sdk_path = (
+            self.current_dir / "app_template" / "assets" / "js" / "syftbox-sdk.js"
+        )
+        js_rpc_debug_path = (
+            self.current_dir / "app_template" / "assets" / "js" / "rpc-debug.js"
+        )
+        css_path = (
+            self.current_dir / "app_template" / "assets" / "css" / "rpc-debug.css"
+        )
+        rpc_debug_path = self.current_dir / "app_template" / "assets" / "rpc-debug.html"
+        with open(rpc_debug_path, "r") as file:
+            rpc_debug_path_content = file.read()
+
+        # template = jinja2.Template(rpc_debug_path_content)
+        # content = {
+        #     "datasite_email": self.client.email,
+        #     "app_name": self.name,
+        #     "server_url": self.config.server_url,
+        #     "endpoint": "/hello",
+        #     "syft_url": f"syft://{self.client.email}/app_data/{self.name}/rpc/hello",
+        #     "body": MessageModel(message="Hello!", name="Alice").model_dump_json(),
+        #     "from_email": "guest",
+        # }
+        # rendered_content = template.render(**content)
+
+        # Define the path in the datasite where the file should be published
+        in_datasite_path = Path("public") / self.name / "rpc-debug.html"
+
+        self.publish_contents(rpc_debug_path_content, in_datasite_path)
+        self.publish_file_path(
+            js_sdk_path,
+            f"public/{self.name}/js/syftbox-sdk.js",
+        )
+        self.publish_file_path(
+            js_rpc_debug_path,
+            f"public/{self.name}/js/rpc-debug.js",
+        )
+        self.publish_file_path(css_path, f"public/{self.name}/css/rpc-debug.css")
+        print(
+            f"🚀 Successfully Published rpc-debug to:\n"
+            f"🌐 URL: {self.config.server_url}datasites/{self.client.email}/public/{self.name}/rpc-debug.html"
+        )

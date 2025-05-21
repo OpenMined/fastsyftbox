@@ -1,1 +1,4 @@
+syft-core
+syft-event
 fastsyftbox
+jinja2
