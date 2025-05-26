@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const appNameInput = document.getElementById('app-name');
     const appEndpointInput = document.getElementById('app-endpoint');
     const autoResumeCheckbox = document.getElementById('auto-resume');
-    const enableDeduplicationCheckbox = document.getElementById('enable-deduplication');
 
     const testConnectionBtn = document.getElementById('test-connection');
     const validateUrlBtn = document.getElementById('validate-url');
@@ -28,25 +27,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const toast = document.getElementById('toast');
 
     // Debug mode for detailed logging
-    const DEBUG = true;
+    const DEBUG = false;
 
     // Currently selected request ID
     let activeRequestId = null;
 
     // App State with defaults
-    const defaultState = {
-        serverUrl: 'https://syftboxdev.openmined.org/',
-        fromEmail: 'guest@syft.local',
-        toEmail: 'madhava@openmined.org',
-        appName: 'fastsyftbox',
-        appEndpoint: 'hello',
-        headers: [
-            { key: 'Content-Type', value: 'application/json' }
-        ],
-        requestBody: '{\n  "message": "Hello, Syft!"\n}',
-        autoResume: true,
-        enableDeduplication: true
-    };
+    const defaultState = window.defaultState
+    console.log("defaultState", defaultState)
+
+    function initDefaults() {
+        // Load current state from localStorage
+        const savedState = JSON.parse(localStorage.getItem('syftBoxRpcState')) || {};
+
+        // Set values in the input fields, using saved state if available, otherwise default
+        document.getElementById('server-url').value = savedState.serverUrl || defaultState.serverUrl;
+        document.getElementById('from-email').value = savedState.fromEmail || defaultState.fromEmail;
+        document.getElementById('to-email').value = savedState.toEmail || defaultState.toEmail;
+        document.getElementById('app-name').value = savedState.appName || defaultState.appName;
+        document.getElementById('app-endpoint').value = savedState.appEndpoint || defaultState.appEndpoint;
+        document.getElementById('auto-resume').checked = savedState.autoResume !== undefined ? savedState.autoResume : defaultState.autoResume;
+    }
+
+    // Initialize defaults on page load
+    initDefaults();
 
     let appState = { ...defaultState };
 
@@ -123,7 +127,6 @@ document.addEventListener('DOMContentLoaded', function () {
         appNameInput.value = appState.appName;
         appEndpointInput.value = appState.appEndpoint;
         autoResumeCheckbox.checked = appState.autoResume;
-        enableDeduplicationCheckbox.checked = appState.enableDeduplication;
 
         // Update Syft URL
         syftUrlInput.value = buildSyftUrl();
@@ -140,8 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Configure SDK
         syftFetch.configure({
             serverUrl: appState.serverUrl,
-            autoResumeActiveRequests: appState.autoResume,
-            enableDeduplication: appState.enableDeduplication
+            autoResumeActiveRequests: appState.autoResume
         });
     }
 
@@ -818,19 +820,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    enableDeduplicationCheckbox.addEventListener('change', function () {
-        appState.enableDeduplication = this.checked;
-        saveAppState();
-
-        // Update SDK config
-        syftFetch.configure({
-            enableDeduplication: appState.enableDeduplication
-        });
-    });
 
     // Button click events
     testConnectionBtn.addEventListener('click', testServerConnection);
     validateUrlBtn.addEventListener('click', validateUrl);
+
     resetDefaultsBtn.addEventListener('click', resetToDefaults);
 
     addHeaderBtn.addEventListener('click', function () {

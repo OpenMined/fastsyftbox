@@ -8,41 +8,6 @@
         });
     }
 
-    function hashRequest(syftUrl, method, headers, body) {
-        // Simple hash function for request deduplication
-        try {
-            // Create a string representation of the request
-            const headerStr = JSON.stringify(Object.entries(headers || {})
-                .filter(([key]) => !key.toLowerCase().includes('timestamp'))
-                .sort()
-                .reduce((obj, [k, v]) => {
-                    obj[k] = v;
-                    return obj;
-                }, {}));
-
-            const parts = [
-                syftUrl,
-                method || 'POST',
-                headerStr,
-                typeof body === 'string' ? body : JSON.stringify(body)
-            ];
-
-            const requestStr = parts.join('|');
-
-            // Simple hash function
-            let hash = 0;
-            for (let i = 0; i < requestStr.length; i++) {
-                const char = requestStr.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32bit integer
-            }
-            return 'req' + Math.abs(hash).toString(16);
-        } catch (e) {
-            console.error('Error hashing request:', e);
-            return 'unhashable' + Date.now();
-        }
-    }
-
     // Request storage & persistence
     const REQUEST_STORAGE_KEY = 'syftbox-requests';
 
@@ -61,9 +26,8 @@
     }
 
     class SyftRequest {
-        constructor(id, hash, requestData) {
+        constructor(id, requestData) {
             this.id = id;
-            this.hash = hash;
             this.requestData = requestData;
             this.status = 'PENDING';
             this.timestamp = Date.now();
@@ -143,7 +107,6 @@
         serialize() {
             return {
                 id: this.id,
-                hash: this.hash,
                 requestData: this.requestData,
                 status: this.status,
                 timestamp: this.timestamp,
@@ -156,7 +119,7 @@
         }
 
         static deserialize(data, sdk) {
-            const request = new SyftRequest(data.id, data.hash, data.requestData);
+            const request = new SyftRequest(data.id, data.requestData);
             request.status = data.status;
             request.timestamp = data.timestamp;
             request.responseData = data.responseData;
@@ -229,11 +192,9 @@
     }
 
     class SyftBoxSDK {
-        constructor({ serverUrl = "https://syftboxdev.openmined.org/", autoResumeActiveRequests = true, enableDeduplication = true, deduplicateWindow = 3600000 } = {}) {
+        constructor({ serverUrl = "https://syftboxdev.openmined.org/", autoResumeActiveRequests = true } = {}) {
             this.serverUrl = serverUrl;
             this.autoResumeActiveRequests = autoResumeActiveRequests;
-            this.enableDeduplication = enableDeduplication;
-            this.deduplicateWindow = deduplicateWindow;
 
             // Initialize request store
             this.requests = {};
@@ -269,7 +230,6 @@
             try {
                 const storedRequests = loadRequests();
                 this.requests = storedRequests;
-                console.log(`Refreshed ${Object.keys(this.requests).length} requests from localStorage`);
             } catch (error) {
                 console.error('Error refreshing requests from storage:', error);
             }
@@ -278,8 +238,6 @@
         configure(options) {
             if (options.serverUrl) this.serverUrl = options.serverUrl;
             if (options.autoResumeActiveRequests !== undefined) this.autoResumeActiveRequests = options.autoResumeActiveRequests;
-            if (options.enableDeduplication !== undefined) this.enableDeduplication = options.enableDeduplication;
-            if (options.deduplicateWindow !== undefined) this.deduplicateWindow = options.deduplicateWindow;
 
             // If auto-resume was enabled, trigger it
             if (options.autoResumeActiveRequests && !this.autoResumeActiveRequests) {
@@ -321,32 +279,9 @@
                 body
             };
 
-            // Generate hash for deduplication
-            const hash = hashRequest(syftUrl, method, options.headers, body);
-
-            // Check for duplicates if enabled
-            if (this.enableDeduplication) {
-                const existingRequest = this.findDuplicateRequest(hash);
-                if (existingRequest) {
-                    console.log(`Found duplicate request (${existingRequest.id}), reusing...`);
-
-                    // If the existing request is successful, return its result directly
-                    if (existingRequest.status === 'SUCCESS') {
-                        return existingRequest.responseData;
-                    }
-
-                    // Otherwise, return the request object for tracking
-                    if (existingRequest.status === 'PENDING' || existingRequest.status === 'POLLING') {
-                        return existingRequest;
-                    }
-
-                    // If the request failed, we'll retry
-                }
-            }
-
             // Create a new request
             const id = generateUUID();
-            const request = new SyftRequest(id, hash, requestData);
+            const request = new SyftRequest(id, requestData);
             request.sdk = this;
 
             // Store the request 
@@ -370,6 +305,7 @@
                 'x-syft-app': request.requestData.appName,
                 'x-syft-appep': request.requestData.appEndpoint,
                 'x-syft-method': method,
+                'x-syft-timeout': 5000,
                 ...headers,
             };
 
@@ -511,23 +447,6 @@
             if (!requestData) return null;
 
             return SyftRequest.deserialize(requestData, this);
-        }
-
-        findDuplicateRequest(hash) {
-            // FIX: Always load the latest data first
-            this._refreshRequestsFromStorage();
-
-            const now = Date.now();
-            const cutoffTime = now - this.deduplicateWindow;
-
-            for (const id in this.requests) {
-                const request = this.requests[id];
-                if (request.hash === hash && request.timestamp > cutoffTime) {
-                    return SyftRequest.deserialize(request, this);
-                }
-            }
-
-            return null;
         }
 
         getAllRequests() {

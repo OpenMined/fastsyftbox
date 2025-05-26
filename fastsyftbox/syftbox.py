@@ -3,7 +3,9 @@ import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import jinja2
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from syft_core import Client as SyftboxClient
 from syft_core import SyftClientConfig
 from syft_event import SyftEvents
@@ -62,50 +64,69 @@ class Syftbox:
         with open(publish_path, "w") as file:
             file.write(file_contents)
 
-    def publish_debug_tool(self):
+    def make_rpc_debug_page(self, endpoint: str, example_request: str):
+        debug_page = self.current_dir / "app_template" / "assets" / "rpc-debug.html"
+        with open(debug_page, "r") as file:
+            debug_page_content = file.read()
+
+        template = jinja2.Template(debug_page_content)
+        content = {
+            "server_url": str(self.config.server_url)
+            or "https://syftboxdev.openmined.org/",
+            "from_email": "guest@syft.local",
+            "to_email": self.client.email,
+            "app_name": self.name,
+            "app_endpoint": endpoint,
+            "headers": [{"key": "Content-Type", "value": "application/json"}],
+            "request_body": str(example_request),
+        }
+
+        try:
+            rendered_content = template.render(**content)
+        except jinja2.exceptions.UndefinedError as e:
+            print(f"Template rendering error: {e}")
+            return "Error rendering template"
+
+        return rendered_content
+
+    def enable_debug_tool(
+        self, endpoint: str, example_request: str, publish: bool = False
+    ):
         """
         Publishes the dynamically generated RPC debug tool HTML page to the datasite.
         """
-        # Generate the RPC debug page content dynamically
-        js_sdk_path = (
-            self.current_dir / "app_template" / "assets" / "js" / "syftbox-sdk.js"
-        )
-        js_rpc_debug_path = (
-            self.current_dir / "app_template" / "assets" / "js" / "rpc-debug.js"
-        )
-        css_path = (
-            self.current_dir / "app_template" / "assets" / "css" / "rpc-debug.css"
-        )
-        rpc_debug_path = self.current_dir / "app_template" / "assets" / "rpc-debug.html"
-        with open(rpc_debug_path, "r") as file:
-            rpc_debug_path_content = file.read()
 
-        # template = jinja2.Template(rpc_debug_path_content)
-        # content = {
-        #     "datasite_email": self.client.email,
-        #     "app_name": self.name,
-        #     "server_url": self.config.server_url,
-        #     "endpoint": "/hello",
-        #     "syft_url": f"syft://{self.client.email}/app_data/{self.name}/rpc/hello",
-        #     "body": MessageModel(message="Hello!", name="Alice").model_dump_json(),
-        #     "from_email": "guest",
-        # }
-        # rendered_content = template.render(**content)
+        rendered_content = self.make_rpc_debug_page(endpoint, example_request)
 
-        # Define the path in the datasite where the file should be published
-        in_datasite_path = Path("public") / self.name / "rpc-debug.html"
+        @self.app.get("/rpc-debug", response_class=HTMLResponse)
+        def get_rpc_debug():
+            return rendered_content
 
-        self.publish_contents(rpc_debug_path_content, in_datasite_path)
-        self.publish_file_path(
-            js_sdk_path,
-            f"public/{self.name}/js/syftbox-sdk.js",
-        )
-        self.publish_file_path(
-            js_rpc_debug_path,
-            f"public/{self.name}/js/rpc-debug.js",
-        )
-        self.publish_file_path(css_path, f"public/{self.name}/css/rpc-debug.css")
-        print(
-            f"🚀 Successfully Published rpc-debug to:\n"
-            f"🌐 URL: {self.config.server_url}datasites/{self.client.email}/public/{self.name}/rpc-debug.html"
-        )
+        if publish:
+            # Generate the RPC debug page content dynamically
+            js_sdk_path = (
+                self.current_dir / "app_template" / "assets" / "js" / "syftbox-sdk.js"
+            )
+            js_rpc_debug_path = (
+                self.current_dir / "app_template" / "assets" / "js" / "rpc-debug.js"
+            )
+            css_path = (
+                self.current_dir / "app_template" / "assets" / "css" / "rpc-debug.css"
+            )
+
+            # Define the path in the datasite where the file should be published
+            in_datasite_path = Path("public") / self.name / "rpc-debug.html"
+
+            self.publish_contents(rendered_content, in_datasite_path)
+            self.publish_file_path(
+                js_sdk_path,
+                f"public/{self.name}/js/syftbox-sdk.js",
+            )
+            self.publish_file_path(
+                js_rpc_debug_path,
+                f"public/{self.name}/js/rpc-debug.js",
+            )
+            self.publish_file_path(css_path, f"public/{self.name}/css/rpc-debug.css")
+            datasite_url = f"{self.config.server_url}datasites/{self.client.email}"
+            url = f"{datasite_url}/public/{self.name}/rpc-debug.html"
+            print(f"🚀 Successfully Published rpc-debug to:\n🌐 URL: {url}")

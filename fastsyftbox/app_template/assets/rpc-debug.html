@@ -8,8 +8,25 @@
     <style>
         @import url("css/rpc-debug.css");
     </style>
+    <script>
+        window.defaultState = {
+            serverUrl: '{{ server_url }}',
+            fromEmail: '{{ from_email }}',
+            toEmail: '{{ to_email }}',
+            appName: '{{ app_name }}',
+            appEndpoint: '{{ app_endpoint }}',
+            headers: [
+                {% for header in headers %}
+        { key: '{{ header.key }}', value: '{{ header.value }}' } {% if not loop.last %}, {% endif %}
+        {% endfor %}
+            ],
+        requestBody: '{{ request_body }}',
+            autoResume: true,
+        };
+    </script>
     <script src="js/syftbox-sdk.js"></script>
     <script src="js/rpc-debug.js"></script>
+
 </head>
 
 <body>
@@ -54,11 +71,6 @@
             <div class="checkbox-container">
                 <input type="checkbox" id="auto-resume" checked>
                 <label for="auto-resume">Auto-resume active requests on page load</label>
-            </div>
-
-            <div class="checkbox-container">
-                <input type="checkbox" id="enable-deduplication" checked>
-                <label for="enable-deduplication">Enable request deduplication</label>
             </div>
 
             <div class="buttons-container">
