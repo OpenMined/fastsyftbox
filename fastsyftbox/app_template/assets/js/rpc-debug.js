@@ -762,6 +762,19 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event Listeners
     // ==========================================
 
+    // Function to update headers based on input changes
+    function updateHeadersFromInput(inputElement, headerKey) {
+        const newValue = inputElement.value.trim();
+        appState.headers.forEach(header => {
+            if (header.key === headerKey) {
+                header.value = newValue;
+            }
+        });
+
+        saveAppState();
+        updateUIFromState();
+    }
+
     // Input field change events
     syftUrlInput.addEventListener('input', function () {
         const url = this.value.trim();
@@ -777,6 +790,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 appNameInput.value = appState.appName;
                 appEndpointInput.value = appState.appEndpoint;
 
+                updateHeadersFromInput(toEmailInput, 'x-syft-to');
+                updateHeadersFromInput(appNameInput, 'x-syft-app');
+                updateHeadersFromInput(appEndpointInput, 'x-syft-appep');
+
                 saveAppState();
             }
         }
@@ -789,24 +806,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     fromEmailInput.addEventListener('input', function () {
         appState.fromEmail = this.value.trim();
+        updateHeadersFromInput(this, 'x-syft-from');
         saveAppState();
     });
 
     toEmailInput.addEventListener('input', function () {
         appState.toEmail = this.value.trim();
         syftUrlInput.value = buildSyftUrl();
+        updateHeadersFromInput(this, 'x-syft-to');
         saveAppState();
     });
 
     appNameInput.addEventListener('input', function () {
         appState.appName = this.value.trim();
         syftUrlInput.value = buildSyftUrl();
+        updateHeadersFromInput(this, 'x-syft-app');
         saveAppState();
     });
 
     appEndpointInput.addEventListener('input', function () {
         appState.appEndpoint = this.value.trim();
         syftUrlInput.value = buildSyftUrl();
+        updateHeadersFromInput(this, 'x-syft-appep');
         saveAppState();
     });
 
@@ -819,7 +840,6 @@ document.addEventListener('DOMContentLoaded', function () {
             autoResumeActiveRequests: appState.autoResume
         });
     });
-
 
     // Button click events
     testConnectionBtn.addEventListener('click', testServerConnection);

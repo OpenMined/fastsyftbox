@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SyftBox API Tester</title>
-    <style>
-        @import url("css/rpc-debug.css");
-    </style>
+    {{ css }}
     <script>
         window.defaultState = {
             serverUrl: '{{ server_url }}',
@@ -15,17 +13,13 @@
             toEmail: '{{ to_email }}',
             appName: '{{ app_name }}',
             appEndpoint: '{{ app_endpoint }}',
-            headers: [
-                {% for header in headers %}
-        { key: '{{ header.key }}', value: '{{ header.value }}' } {% if not loop.last %}, {% endif %}
-        {% endfor %}
-            ],
+            headers: {{ headers }},
         requestBody: '{{ request_body }}',
             autoResume: true,
         };
     </script>
-    <script src="js/syftbox-sdk.js"></script>
-    <script src="js/rpc-debug.js"></script>
+    {{ js_sdk }}
+    {{ js_rpc_debug }}
 
 </head>
 
@@ -44,27 +38,27 @@
             <div class="field-grid">
                 <div class="field-container">
                     <label for="server-url">Server URL</label>
-                    <input type="text" id="server-url" placeholder="https://syftboxdev.openmined.org/">
+                    <input type="text" id="server-url" placeholder="{{ server_url }}">
                 </div>
 
                 <div class="field-container">
                     <label for="from-email">From Email</label>
-                    <input type="text" id="from-email" placeholder="guest@syft.local">
+                    <input type="text" id="from-email" placeholder="{{ from_email }}" data-header="x-syft-from">
                 </div>
 
                 <div class="field-container">
                     <label for="to-email">To Email</label>
-                    <input type="text" id="to-email" placeholder="madhava@openmined.org">
+                    <input type="text" id="to-email" placeholder="{{ to_email }}" data-header="x-syft-to">
                 </div>
 
                 <div class="field-container">
                     <label for="app-name">App Name</label>
-                    <input type="text" id="app-name" placeholder="fastsyftbox">
+                    <input type="text" id="app-name" placeholder="{{ app_name }}" data-header="x-syft-app">
                 </div>
 
                 <div class="field-container">
                     <label for="app-endpoint">App Endpoint</label>
-                    <input type="text" id="app-endpoint" placeholder="/hello">
+                    <input type="text" id="app-endpoint" placeholder="{{ app_endpoint }}" data-header="x-syft-appep">
                 </div>
             </div>
 

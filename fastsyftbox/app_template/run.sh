@@ -2,7 +2,7 @@
 
 rm -rf .venv
 
-uv venv --path .venv -p 3.12
+uv venv -p 3.12 .venv
 uv pip install -r requirements.txt
 
 # Set default port if not provided
