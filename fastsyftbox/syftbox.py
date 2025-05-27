@@ -2,6 +2,7 @@ import asyncio
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Awaitable, Callable
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
@@ -16,6 +17,7 @@ class Syftbox:
         app: FastAPI,
         name: str,
         config: SyftClientConfig = None,
+        background_tasks: list[Callable[[], Awaitable[None]]] = None,
     ):
         self.name = name
         self.app = app
@@ -37,6 +39,8 @@ class Syftbox:
         self.debug = False
         self.debug_publish = False
         # Attach lifespan
+
+        self.background_tasks = background_tasks or []
         self._attach_lifespan()
 
     def _attach_lifespan(self):
@@ -44,6 +48,11 @@ class Syftbox:
         async def lifespan(app: FastAPI):
             loop = asyncio.get_event_loop()
             loop.run_in_executor(None, self.box.run_forever)
+
+            # Schedule background tasks
+            for task_fn in self.background_tasks:
+                asyncio.create_task(task_fn())
+
             yield
 
         self.app.router.lifespan_context = lifespan
