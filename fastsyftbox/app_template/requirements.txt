@@ -1,1 +1,3 @@
+syft-core
+syft-event
 fastsyftbox

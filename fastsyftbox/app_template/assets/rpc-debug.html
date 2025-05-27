@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SyftBox API Tester</title>
+    {{ css }}
+    <script>
+        window.defaultState = {
+            serverUrl: '{{ server_url }}',
+            fromEmail: '{{ from_email }}',
+            toEmail: '{{ to_email }}',
+            appName: '{{ app_name }}',
+            appEndpoint: '{{ app_endpoint }}',
+            headers: {{ headers }},
+        requestBody: '{{ request_body }}',
+            autoResume: true,
+        };
+    </script>
+    {{ js_sdk }}
+    {{ js_rpc_debug }}
+
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>SyftBox RPC Tester</h1>
+        </header>
+
+        <div class="url-builder">
+            <div class="syft-url-container">
+                <label for="syft-url">Syft URL</label>
+                <input type="text" id="syft-url" placeholder="syft://username@domain.com/app_data/appname/rpc/endpoint">
+            </div>
+
+            <div class="field-grid">
+                <div class="field-container">
+                    <label for="server-url">Server URL</label>
+                    <input type="text" id="server-url" placeholder="{{ server_url }}">
+                </div>
+
+                <div class="field-container">
+                    <label for="from-email">From Email</label>
+                    <input type="text" id="from-email" placeholder="{{ from_email }}" data-header="x-syft-from">
+                </div>
+
+                <div class="field-container">
+                    <label for="to-email">To Email</label>
+                    <input type="text" id="to-email" placeholder="{{ to_email }}" data-header="x-syft-to">
+                </div>
+
+                <div class="field-container">
+                    <label for="app-name">App Name</label>
+                    <input type="text" id="app-name" placeholder="{{ app_name }}" data-header="x-syft-app">
+                </div>
+
+                <div class="field-container">
+                    <label for="app-endpoint">App Endpoint</label>
+                    <input type="text" id="app-endpoint" placeholder="{{ app_endpoint }}" data-header="x-syft-appep">
+                </div>
+            </div>
+
+            <div class="checkbox-container">
+                <input type="checkbox" id="auto-resume" checked>
+                <label for="auto-resume">Auto-resume active requests on page load</label>
+            </div>
+
+            <div class="buttons-container">
+                <button id="test-connection" class="btn-primary">Test Server Connection</button>
+                <button id="validate-url" class="btn-secondary">Validate Syft URL</button>
+                <button id="reset-defaults" class="btn-danger">Reset to Defaults</button>
+            </div>
+        </div>
+
+        <div class="request-builder">
+            <div class="headers-section">
+                <div class="section-title">
+                    <h2>Headers</h2>
+                </div>
+                <div id="headers-list" class="headers-list">
+                    <!-- Headers will be dynamically added here -->
+                </div>
+                <div id="add-header" class="add-header">+ Add Header</div>
+            </div>
+
+            <div class="body-section">
+                <div class="section-title">
+                    <h2>Request Body</h2>
+                    <button id="format-json" class="btn-light">Format JSON</button>
+                </div>
+                <textarea id="request-body" class="body-textarea" placeholder='{"key": "value"}'></textarea>
+            </div>
+
+            <button id="send-request" class="send-request-btn">Send Request</button>
+        </div>
+
+        <div class="history-view">
+            <div class="requests-list-container">
+                <div class="history-header">
+                    <h2>Requests</h2>
+                    <button id="clear-requests" class="btn-light">Clear All</button>
+                </div>
+                <div id="requests-list" class="requests-list">
+                    <!-- Request items will be added here -->
+                </div>
+            </div>
+
+            <div class="request-details-container">
+                <div class="history-header">
+                    <h2>Request Details</h2>
+                </div>
+                <div id="request-details" class="request-details">
+                    <div class="no-details">Select a request to view details</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+</body>
+
+</html>
