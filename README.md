@@ -51,10 +51,16 @@ cd test
 
 This generates a sample FastAPI app in `app.py`:
 ```python
-app = FastAPI(title=app_name)
 
-# add your fastapi app to the syftbox object
-syftbox = Syftbox(app=app, name=app_name)
+
+app = FastSyftBox(
+    app_name=app_name,
+    syftbox_endpoint_tags=[
+        "syftbox"
+    ],  # endpoints with this tag are also available via Syft RPC
+    include_syft_openapi=True,  # Create OpenAPI endpoints for syft-rpc routes
+)
+
 
 # normal fastapi
 @app.get("/", response_class=HTMLResponse)
@@ -69,13 +75,14 @@ class MessageModel(BaseModel):
 
 # make syftbox rpc endpoints easily
 # syft://{datasite}/app_data/{app_name}/rpc/hello
-@syftbox.on_request("/hello")
+@app.post("/hello", tags=["syftbox"])
 def hello_handler(request: MessageModel):
+    print("got request", request)
     response = MessageModel(message=f"Hi {request.name}", name="Bob")
     return response.model_dump_json()
 
 # Debug your RPC endpoints in the browser
-syftbox.enable_debug_tool(
+app.enable_debug_tool(
     endpoint="/hello",
     example_request=str(MessageModel(message="Hello!", name="Alice").model_dump_json()),
     publish=True,
@@ -112,7 +119,7 @@ Under the hood:
 
 
 ## What is SyftBox?
-<a href="https://github.com/OpenMined/syftbox" target="_blank"><img src="img/syftbox_icon.png" style="max-width: 200px; float: right;" target="_blank" /></a><br />
+<a href="https://github.com/OpenMined/syftbox" target="_blank"><img src="img/syftbox_icon.png" style="width:200px; max-width: 200px; float: right;" target="_blank" /></a>
 SyftBox is a new platform for building privacy-preserving applications and experiences that work over the internet without uploading your data. Instead of sending your data to a server, SyftBox lets you run powerful AI and analytics locally or in trusted environments, so your personal information stays private and secure.
 
 <a href="https://github.com/OpenMined/syftbox" target="_blank">Read more about SyftBox here</a>
@@ -130,7 +137,7 @@ A built-in HTML/JS tool helps you debug your HTTP over RPC endpoints.
 To enable:
 
 ```python
-syftbox.enable_debug_tool(
+app.enable_debug_tool(
     endpoint="/hello",
     example_request=str(MessageModel(message="Hello!", name="Alice").model_dump_json()),
     publish=True,
