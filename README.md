@@ -1,5 +1,5 @@
 <h1 style="border: none; margin-bottom: 0;">fastsyftbox</h1>
-<a href="https://github.com/OpenMined/syftbox" target="_blank">
+<a href="https://syftbox.net/" target="_blank">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="img/mwsyftbox_white_on.png">
     <img alt="Logo" src="img/mwsyftbox_black_on.png" width="200px" align="right" />
@@ -9,7 +9,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/fastsyftbox)](https://pypi.org/project/fastsyftbox/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/fastsyftbox)](https://pypi.org/project/fastsyftbox/)
 [![License](https://img.shields.io/github/license/OpenMined/fastsyftbox)](https://github.com/OpenMined/fastsyftbox/blob/main/LICENSE)
-[![MadeWith](https://img.shields.io/badge/MadeWith-SyftBox-blue)](https://github.com/OpenMined/fastsyftbox)
+[![MadeWith](https://img.shields.io/badge/MadeWith-SyftBox-blue)](https://syftbox.net/)
 
 <br />
 
@@ -119,10 +119,10 @@ Under the hood:
 
 
 ## What is SyftBox?
-<a href="https://github.com/OpenMined/syftbox" target="_blank"><img src="img/syftbox_icon.png" style="width:200px; max-width: 200px; float: right;" target="_blank" /></a>
+<a href="https://syftbox.net/" target="_blank"><img src="img/syftbox_icon.png" style="width:200px; max-width: 200px;" align="right" target="_blank" /></a>
 SyftBox is a new platform for building privacy-preserving applications and experiences that work over the internet without uploading your data. Instead of sending your data to a server, SyftBox lets you run powerful AI and analytics locally or in trusted environments, so your personal information stays private and secure.
 
-<a href="https://github.com/OpenMined/syftbox" target="_blank">Read more about SyftBox here</a>
+<a href="https://syftbox.net/" target="_blank">Read more about SyftBox here</a>
 <div style="clear: both;"></div>
 
 ## 🧱 Your Dependencies
@@ -156,7 +156,7 @@ app.enable_debug_tool(
 Then visit either:
 http://localhost:${SYFTBOX_ASSIGNED_PORT}/rpc-debug
 or if you have publish=True
-https://syftboxdev.openmined.org/datasites/{{ email }}/public/{{ app_name }}/rpc-debug.html
+https://syftbox.net/datasites/{{ email }}/public/{{ app_name }}/rpc-debug.html
 
 
 ## 📥 SyftBox App Install via GitHub
