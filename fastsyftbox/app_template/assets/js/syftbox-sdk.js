@@ -192,7 +192,7 @@
     }
 
     class SyftBoxSDK {
-        constructor({ serverUrl = "https://syftboxdev.openmined.org/", autoResumeActiveRequests = true } = {}) {
+        constructor({ serverUrl = "https://syftbox.net/", autoResumeActiveRequests = true } = {}) {
             this.serverUrl = serverUrl;
             this.autoResumeActiveRequests = autoResumeActiveRequests;
 
