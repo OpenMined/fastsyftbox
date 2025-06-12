@@ -3,15 +3,18 @@ from __future__ import annotations
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncContextManager, Optional
+from typing import AsyncContextManager, Callable, Optional
 
 import httpx
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.routing import APIRoute, BaseRoute
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 from syft_core import Client as SyftboxClient
-from syft_core import SyftClientConfig
+from syft_core import SyftBoxURL, SyftClientConfig
 
 from .http_bridge import SyftHTTPBridge
 
@@ -41,6 +44,9 @@ class FastSyftBox(FastAPI):
 
         # Wrap user lifespan with bridge lifespan
         super().__init__(title=app_name, lifespan=self._combined_lifespan, **kwargs)
+
+        # Add middleware to inject syftbox dependencies into requests
+        self.add_middleware(BaseHTTPMiddleware, dispatch=self._inject_syftbox_deps)
 
     @asynccontextmanager
     async def _combined_lifespan(self, app: FastAPI):
@@ -230,3 +236,36 @@ class FastSyftBox(FastAPI):
                 url = f"{datasite_url}/public/{self.app_name}/rpc-debug.html"
                 html += f"<br /><a href='{url}'>Published RPC Debug</a>"
         return html
+
+    async def _inject_syftbox_deps(
+        self, request: Request, call_next: Callable
+    ) -> Response:
+        """
+        Middleware to inject syftbox client, syft events and syftbox rpc url into the request state
+        if the route has the "syftbox" tag.
+        """
+        # Find the route that matches the request URL
+        route = None
+        for r in self.routes:
+            if r.path == request.url.path:
+                route = r
+                break
+        # If the route is an APIRoute, check its tags
+        tags = getattr(route, "tags", []) if route else []
+        if "syftbox" in tags:
+            # Inject syftbox client, syft events and syftbox url
+            setattr(request.state, "syftbox_client", self.syftbox_client)
+            setattr(
+                request.state,
+                "box_app",
+                self.bridge.syft_events if self.bridge else None,
+            )
+
+            # Inject the syftbox rpc url
+            url = request.headers.get("X-Syft-URL", None)
+            rpc_url = SyftBoxURL(url=url) if url else None
+            setattr(request.state, "syftbox_url", rpc_url)
+
+        response = await call_next(request)
+
+        return response
