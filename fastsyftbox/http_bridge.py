@@ -56,9 +56,13 @@ class SyftHTTPBridge:
             print("Error getting method Defaulting to POST", e)
             pass
 
+        headers = request.headers or {}
+        headers["X-Syft-URL"] = str(request.url)
+
         return await self.app_client.request(
             method=method,
             url=path,
             content=request.body,
             headers=request.headers,
+            params=request.url.query,
         )
