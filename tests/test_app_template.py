@@ -69,10 +69,15 @@ class TestAppTemplate:
             requirements = (app_dir / "requirements.txt").read_text()
             assert "fastsyftbox" in requirements
 
-            # Test run.sh permissions
+            # Test run.sh permissions (skip execute check on Windows)
             run_sh = app_dir / "run.sh"
-            file_stat = run_sh.stat()
-            assert file_stat.st_mode & stat.S_IEXEC
+            assert run_sh.exists()
+            
+            # Only check execute permissions on Unix systems
+            import platform
+            if platform.system() != 'Windows':
+                file_stat = run_sh.stat()
+                assert file_stat.st_mode & stat.S_IEXEC
 
     def test_template_variable_substitution(self, template_dir):
         """Test template variable substitution in debug tool."""

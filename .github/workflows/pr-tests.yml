@@ -32,9 +32,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       with:
-        enable-cache: true
-        cache-dependency-glob: |
-          **/pyproject.toml
+        enable-cache: false
           
     - name: Create virtual environment
       run: uv venv
@@ -90,7 +88,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       with:
-        enable-cache: true
+        enable-cache: false
         
     - name: Make lint.sh executable
       run: chmod +x lint.sh
@@ -122,6 +120,9 @@ jobs:
     - name: Test CLI installation and basic commands (Windows)
       if: runner.os == 'Windows'
       run: |
+        # Create virtual environment
+        uv venv
+        
         # Install the package
         uv pip install -e .
         
@@ -140,6 +141,9 @@ jobs:
     - name: Test CLI installation and basic commands (Unix)
       if: runner.os != 'Windows'
       run: |
+        # Create virtual environment
+        uv venv
+        
         # Install the package
         uv pip install -e .
         
