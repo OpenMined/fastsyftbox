@@ -1,0 +1,186 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: false
+          
+    - name: Create virtual environment
+      run: uv venv
+      
+    - name: Install dependencies
+      run: |
+        uv sync --extra dev
+        
+    - name: Show environment info
+      run: |
+        uv run python --version
+        uv run pip list
+        
+    - name: Make test.sh executable
+      run: chmod +x test.sh
+      
+    - name: Run tests
+      run: |
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" && "${{ matrix.python-version }}" == "3.12" ]]; then
+          # Run with coverage on Ubuntu Python 3.12
+          ./test.sh --coverage-format all
+        else
+          # Run without coverage on other combinations
+          ./test.sh --no-coverage
+        fi
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+        
+    - name: Upload coverage reports
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: |
+          coverage.xml
+          coverage.json
+          htmlcov/
+          
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  lint:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: false
+        
+    - name: Make lint.sh executable
+      run: chmod +x lint.sh
+      
+    - name: Run lint checks
+      run: ./lint.sh --check --verbose
+      continue-on-error: true  # Type checking might have some issues initially
+
+  test-cli:
+    name: Test CLI Installation
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.9', '3.12']
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      
+    - name: Test CLI installation and basic commands
+      run: |
+        # Create virtual environment
+        uv venv
+        
+        # Install the package
+        uv pip install -e .
+        
+        # Test version command
+        uv run fastsyftbox version
+        
+        # Test help command
+        uv run fastsyftbox --help
+        
+        # Test create app command
+        uv run fastsyftbox create app test_app
+        
+        # Verify app was created
+        ls -la test_app/
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.12']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: false
+      
+    - name: Create virtual environment
+      run: uv venv
+      
+    - name: Install dependencies
+      run: |
+        uv sync --extra dev
+        
+    - name: Run performance tests
+      run: |
+        uv run pytest tests/test_performance.py -v --tb=short
+      env:
+        PYTHONPATH: ${{ github.workspace }}

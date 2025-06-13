@@ -50,7 +50,7 @@ class SyftHTTPBridge:
     ) -> httpx.Response:
         method = "POST"
         try:
-            method = str(request.method)
+            method = str(request.method)  # type: ignore[attr-defined]
         except Exception as e:
             # TODO remove once the events library is fixed
             print("Error getting method Defaulting to POST", e)
