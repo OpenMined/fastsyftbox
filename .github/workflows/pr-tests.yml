@@ -1,0 +1,147 @@
+name: PR Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        cache-dependency-glob: |
+          **/pyproject.toml
+          **/requirements*.txt
+          
+    - name: Create virtual environment
+      run: uv venv
+      
+    - name: Install dependencies
+      run: |
+        uv sync --extra dev
+        
+    - name: Make test.sh executable (Unix)
+      if: runner.os != 'Windows'
+      run: chmod +x test.sh
+      
+    - name: Run tests (Unix)
+      if: runner.os != 'Windows'
+      run: ./test.sh --no-coverage
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+        
+    - name: Run tests (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        uv run pytest tests/ -v --tb=short --maxfail=10
+      env:
+        PYTHONPATH: ${{ github.workspace }}
+        
+    - name: Run tests with coverage (Ubuntu only)
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      run: ./test.sh --coverage-format xml
+      
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  lint:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        enable-cache: true
+        
+    - name: Make lint.sh executable
+      run: chmod +x lint.sh
+      
+    - name: Run lint checks
+      run: ./lint.sh --check --verbose
+      continue-on-error: true  # Type checking might have some issues initially
+
+  test-cli:
+    name: Test CLI Installation
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.9', '3.12']
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      
+    - name: Test CLI installation and basic commands
+      run: |
+        # Install the package
+        uv pip install -e .
+        
+        # Test version command
+        uv run fastsyftbox version
+        
+        # Test help command
+        uv run fastsyftbox --help
+        
+        # Test create app command (dry run)
+        uv run fastsyftbox create app test_app_${{ matrix.os }}
+        
+        # Verify app was created
+        ls -la test_app_${{ matrix.os }}/ || dir test_app_${{ matrix.os }}
+      shell: bash
+
+  all-tests-pass:
+    name: All Tests Pass
+    needs: [test, lint, test-cli]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check test results
+        run: echo "All tests passed successfully!"

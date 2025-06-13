@@ -3,13 +3,13 @@ from __future__ import annotations
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncContextManager, Optional
+from typing import Any, AsyncContextManager, Callable, Optional
 
 import httpx
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.routing import APIRoute, BaseRoute
+from fastapi.routing import APIRoute
 from syft_core import Client as SyftboxClient
 from syft_core import SyftClientConfig
 
@@ -23,7 +23,7 @@ class FastSyftBox(FastAPI):
         self,
         app_name: str,
         syftbox_config: Optional[SyftClientConfig] = None,
-        lifespan: Optional[AsyncContextManager] = None,
+        lifespan: Optional[Callable[[Any], AsyncContextManager[None]]] = None,
         syftbox_endpoint_tags: Optional[list[str]] = None,
         include_syft_openapi: bool = True,
         **kwargs,
@@ -90,7 +90,7 @@ class FastSyftBox(FastAPI):
             if isinstance(route, APIRoute) and any(tag in route.tags for tag in tags)
         ]
 
-    def _create_syft_openapi_endpoints(self, syft_routes: list[BaseRoute]) -> None:
+    def _create_syft_openapi_endpoints(self, syft_routes: list[APIRoute]) -> None:
         """Generate OpenAPI schema for Syft-enabled endpoints only"""
 
         if not self.include_syft_openapi:
@@ -226,7 +226,9 @@ class FastSyftBox(FastAPI):
         if self.debug:
             html = "<a href='/rpc-debug'>Local RPC Debug</a>"
             if self.debug_publish:
-                datasite_url = f"{self.syftbox_config.server_url}datasites/{self.syftbox_client.email}"
+                base_url = self.syftbox_config.server_url
+                email = self.syftbox_client.email
+                datasite_url = f"{base_url}datasites/{email}"
                 url = f"{datasite_url}/public/{self.app_name}/rpc-debug.html"
                 html += f"<br /><a href='{url}'>Published RPC Debug</a>"
         return html
