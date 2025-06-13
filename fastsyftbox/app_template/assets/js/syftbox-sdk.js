@@ -144,13 +144,13 @@
                 this.updateStatus('POLLING', this.requestId);
 
                 try {
-                    const { toEmail, appName, appEndpoint } = this.requestData;
+                    const { syftUrl, fromEmail } = this.requestData;
+
+                    const pollUrlPath = `/api/v1/send/poll?x-syft-from=${fromEmail}&x-syft-url=${encodeURIComponent(syftUrl)}`
 
                     // Resume polling
                     const response = await sdk.pollForResponse({
-                        toEmail,
-                        appName,
-                        appEndpoint,
+                        pollUrlPath: pollUrlPath,
                         requestId: this.requestId,
                         request: this // Pass the request object for progress updates
                     });
@@ -261,8 +261,6 @@
         async syftFetch(syftUrl, options = {}) {
             // FIX: Refresh requests from storage before processing
             this._refreshRequestsFromStorage();
-
-            const { toEmail, appName, appEndpoint } = this.parseSyftUrl(syftUrl);
             const fromEmail = options.headers?.['x-syft-from'] || 'anonymous@syft.local';
             const method = options.method || 'POST';
             const body = options.body;
@@ -270,9 +268,6 @@
             // Request metadata
             const requestData = {
                 syftUrl,
-                toEmail,
-                appName,
-                appEndpoint,
                 fromEmail,
                 method,
                 headers: options.headers,
@@ -294,24 +289,19 @@
         }
 
         async sendRequest(request) {
-            const { syftUrl, method, headers, body } = request.requestData;
+            const { syftUrl, fromEmail, method, headers, body } = request.requestData;
 
             // Prepare headers
             const combinedHeaders = {
                 'Content-Type': 'application/json',
-                'x-syft-msg-type': 'request',
-                'x-syft-from': request.requestData.fromEmail,
-                'x-syft-to': request.requestData.toEmail,
-                'x-syft-app': request.requestData.appName,
-                'x-syft-appep': request.requestData.appEndpoint,
-                'x-syft-method': method,
-                'x-syft-timeout': 5000,
+                'x-syft-from': fromEmail,
+                'timeout': 5000,
                 ...headers,
             };
 
             try {
                 // Construct the message URL
-                const msgUrl = `${this.serverUrl}api/v1/send/msg?user=${request.requestData.toEmail}`;
+                const msgUrl = `${this.serverUrl}api/v1/send/msg?x-syft-from=${fromEmail}&x-syft-url=${encodeURIComponent(syftUrl)}`;
 
                 // Send the request
                 const response = await fetch(msgUrl, {
@@ -329,14 +319,13 @@
                         // Update request status and start polling
                         request.updateStatus('POLLING', responseBody.request_id);
 
+                        console.log("Location", response.headers.get('Location'))
+
                         // Start polling for the result
                         try {
                             const pollResult = await this.pollForResponse({
-                                toEmail: request.requestData.toEmail,
-                                appName: request.requestData.appName,
-                                appEndpoint: request.requestData.appEndpoint,
                                 requestId: responseBody.request_id,
-                                request: request // Pass the request object for progress updates
+                                pollUrlPath: response.headers.get('Location'), 
                             });
 
                             // Update with success
@@ -372,8 +361,13 @@
             }
         }
 
-        async pollForResponse({ toEmail, appName, appEndpoint, requestId, request, maxAttempts = 20, interval = 3000 }) {
-            const pollUrl = `${this.serverUrl}api/v1/send/poll?user=${toEmail}&app_name=${encodeURIComponent(appName)}&app_endpoint=${encodeURIComponent(appEndpoint)}&request_id=${encodeURIComponent(requestId)}`;
+        async pollForResponse({ requestId, pollUrlPath, request, maxAttempts = 20, interval = 3000 }) {
+            // remove the leading / from the pollUrlPath
+            pollUrlPath = pollUrlPath.replace(/^\//, '');
+
+            const pollUrl = `${this.serverUrl}${pollUrlPath}`;
+
+            console.log("Polling for response", pollUrl)
 
             // Store the max attempts in the request object for tracking
             if (request) {
