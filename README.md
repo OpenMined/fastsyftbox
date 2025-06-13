@@ -9,8 +9,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/fastsyftbox)](https://pypi.org/project/fastsyftbox/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/fastsyftbox)](https://pypi.org/project/fastsyftbox/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/fastsyftbox)](https://pypi.org/project/fastsyftbox/)
-[![CI](https://github.com/OpenMined/fastsyftbox/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenMined/fastsyftbox/actions/workflows/ci.yml)
-[![PR Tests](https://github.com/OpenMined/fastsyftbox/actions/workflows/pr-tests.yml/badge.svg)](https://github.com/OpenMined/fastsyftbox/actions/workflows/pr-tests.yml)
+[![Tests](https://github.com/OpenMined/fastsyftbox/actions/workflows/pr-tests.yml/badge.svg)](https://github.com/OpenMined/fastsyftbox/actions/workflows/pr-tests.yml)
 [![License](https://img.shields.io/github/license/OpenMined/fastsyftbox)](https://github.com/OpenMined/fastsyftbox/blob/main/LICENSE)
 [![MadeWith](https://img.shields.io/badge/MadeWith-SyftBox-blue)](https://github.com/OpenMined/fastsyftbox)
 
