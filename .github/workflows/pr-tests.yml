@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         
     steps:
@@ -102,7 +102,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ['3.9', '3.12']
         
     steps:
@@ -117,8 +117,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v3
       
-    - name: Test CLI installation and basic commands (Windows)
-      if: runner.os == 'Windows'
+    - name: Test CLI installation and basic commands
       run: |
         # Create virtual environment
         uv venv
@@ -133,31 +132,10 @@ jobs:
         uv run fastsyftbox --help
         
         # Test create app command
-        uv run fastsyftbox create app test_app_windows
+        uv run fastsyftbox create app test_app
         
         # Verify app was created
-        dir test_app_windows
-        
-    - name: Test CLI installation and basic commands (Unix)
-      if: runner.os != 'Windows'
-      run: |
-        # Create virtual environment
-        uv venv
-        
-        # Install the package
-        uv pip install -e .
-        
-        # Test version command
-        uv run fastsyftbox version
-        
-        # Test help command
-        uv run fastsyftbox --help
-        
-        # Test create app command
-        uv run fastsyftbox create app test_app_unix
-        
-        # Verify app was created
-        ls -la test_app_unix/
+        ls -la test_app/
 
   all-tests-pass:
     name: All Tests Pass

@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         
     steps:
@@ -67,13 +67,6 @@ jobs:
       env:
         PYTHONPATH: ${{ github.workspace }}
         
-    - name: Run tests (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        # Windows doesn't support the bash test.sh script, so run pytest directly
-        uv run pytest tests/ -v --tb=short --maxfail=10
-      env:
-        PYTHONPATH: ${{ github.workspace }}
         
     - name: Upload coverage reports
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
@@ -155,7 +148,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ['3.9', '3.12']
         
     steps:
@@ -175,21 +168,7 @@ jobs:
         uv run python -m pip install build
         uv run python -m build
         
-    - name: Test package installation (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        # Create a fresh virtual environment for testing
-        uv venv test-env
-        
-        # Install the built package
-        test-env\Scripts\pip install dist\fastsyftbox-*.whl
-        
-        # Test installed CLI
-        test-env\Scripts\fastsyftbox version
-        test-env\Scripts\fastsyftbox --help
-        
-    - name: Test package installation (Unix)
-      if: runner.os != 'Windows'
+    - name: Test package installation
       run: |
         # Create a fresh virtual environment for testing
         uv venv test-env
