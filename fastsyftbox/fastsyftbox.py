@@ -169,13 +169,8 @@ class FastSyftBox(FastAPI):
         content = content.replace("{{ request_body }}", str(example_request))
 
         default_headers = [
-            {"key": "x-syft-msg-type", "value": "request"},
             {"key": "x-syft-from", "value": "guest@syft.local"},
-            {"key": "x-syft-to", "value": self.syftbox_client.email},
-            {"key": "x-syft-app", "value": self.app_name},
-            {"key": "x-syft-appep", "value": endpoint},
-            {"key": "x-syft-method", "value": "POST"},
-            {"key": "x-syft-timeout", "value": "5000"},
+            {"key": "timeout", "value": "1000"},
             {"key": "Content-Type", "value": "application/json"},
         ]
 
