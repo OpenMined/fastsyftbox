@@ -378,6 +378,14 @@
                         if (response.status === 500 && body.error === "No response exists. Polling timed out") {
                             return null;
                         }
+                        // if the request is not found, we can't poll for it
+                        else if (response.status === 404) {
+                            return {
+                                status: 'ERROR',
+                                message: body.message || 'No request found.',
+                                request_id: requestId
+                            };
+                        }
                         throw new SyftError(`Polling failed: ${response.status}`, 'POLLING_ERROR');
                     }
 
