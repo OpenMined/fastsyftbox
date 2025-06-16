@@ -205,18 +205,34 @@ document.addEventListener('DOMContentLoaded', function () {
             const index = Array.from(headerItem.parentNode.children).indexOf(headerItem);
             if (index !== -1) {
                 appState.headers[index].key = this.value;
+                // If this is x-syft-raw, update the value input to be a checkbox
+                if (this.value === 'x-syft-raw') {
+                    valueInput.type = 'checkbox';
+                    valueInput.checked = value.toLowerCase() === 'true';
+                } else {
+                    valueInput.type = 'text';
+                    valueInput.value = value;
+                }
                 saveAppState();
             }
         });
 
         const valueInput = document.createElement('input');
-        valueInput.type = 'text';
+        valueInput.type = key === 'x-syft-raw' ? 'checkbox' : 'text';
         valueInput.placeholder = 'Header Value';
-        valueInput.value = value;
+        if (key === 'x-syft-raw') {
+            valueInput.checked = value.toLowerCase() === 'true';
+        } else {
+            valueInput.value = value;
+        }
         valueInput.addEventListener('input', function () {
             const index = Array.from(headerItem.parentNode.children).indexOf(headerItem);
             if (index !== -1) {
-                appState.headers[index].value = this.value;
+                if (key === 'x-syft-raw') {
+                    appState.headers[index].value = this.checked.toString();
+                } else {
+                    appState.headers[index].value = this.value;
+                }
                 saveAppState();
             }
         });
@@ -267,7 +283,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // Add custom headers
         appState.headers.forEach(header => {
             if (header.key && header.value) {
-                headers[header.key] = header.value;
+                // Convert boolean strings to actual booleans for x-syft-raw
+                if (header.key === 'x-syft-raw') {
+                    headers[header.key] = header.value.toLowerCase() === 'true';
+                } else {
+                    headers[header.key] = header.value;
+                }
             }
         });
 
