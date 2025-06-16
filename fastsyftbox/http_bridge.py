@@ -64,5 +64,5 @@ class SyftHTTPBridge:
             url=path,
             content=request.body,
             headers=request.headers,
-            params=request.url.query,
+            params=request.url.query or None,
         )
