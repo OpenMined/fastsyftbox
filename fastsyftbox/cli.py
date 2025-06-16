@@ -30,9 +30,7 @@ def create(
     typer.echo("--------------------------------------------------")
     typer.echo("Your app structure:")
     typer.echo(f"{name}/")
-    typer.echo(
-        "├── run.sh            <-  entry point using 'uv' to manage Python and pip packages"
-    )
+    typer.echo("├── run.sh            <-  entry point using 'uv' to manage packages")
     typer.echo("├── requirements.txt  <-  python requirements")
     typer.echo("└── app.py            <-  your fastapi and syftbox application")
     typer.echo("--------------------------------------------------")
