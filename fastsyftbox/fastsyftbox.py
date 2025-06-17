@@ -162,14 +162,14 @@ class FastSyftBox(FastAPI):
             "{{ server_url }}",
             str(self.syftbox_config.server_url) or "https://syftboxdev.openmined.org/",
         )
-        content = content.replace("{{ from_email }}", "guest@syft.local")
+        content = content.replace("{{ from_email }}", self.syftbox_client.email)
         content = content.replace("{{ to_email }}", self.syftbox_client.email)
         content = content.replace("{{ app_name }}", self.app_name)
         content = content.replace("{{ app_endpoint }}", endpoint)
         content = content.replace("{{ request_body }}", str(example_request))
 
         default_headers = [
-            {"key": "x-syft-from", "value": "guest@syft.local"},
+            {"key": "x-syft-from", "value": self.syftbox_client.email},
             {"key": "timeout", "value": "1000"},
             {"key": "Content-Type", "value": "application/json"},
         ]

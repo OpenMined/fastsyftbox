@@ -2,7 +2,7 @@
     // Constants
     const CONSTANTS = {
         STORAGE_KEY: 'syftbox-requests',
-        DEFAULT_SERVER_URL: 'https://syftboxdev.openmined.org/',
+        DEFAULT_SERVER_URL: 'https://dev.syftbox.net/',
         DEFAULT_POLLING_INTERVAL: 3000,
         DEFAULT_MAX_POLL_ATTEMPTS: 20,
         DEFAULT_TIMEOUT: 5000,
@@ -220,7 +220,7 @@
                 try {
                     const result = await pollFn();
                     if (result) return result;
-                    
+
                     await utils.delay(this.getBackoffDelay(attempt));
                     attempt++;
                     onProgress?.(attempt, this.maxAttempts);
@@ -343,9 +343,16 @@
                     }
 
                     request.updateStatus('POLLING', responseBody.request_id);
+                    for (const [key, value] of response.headers.entries()) {
+                        console.log(`Header: ${key} = ${value}`);
+                    }
+
+                    const pollUrl = responseBody.data?.poll_url;
+                    const locationHeader = response.headers.get('Location');
+
                     const pollResult = await this.pollForResponse({
                         requestId: responseBody.request_id,
-                        pollUrlPath: response.headers.get('Location'),
+                        pollUrlPath: pollUrl || locationHeader,
                         request
                     });
 
@@ -369,10 +376,16 @@
 
         async pollForResponse({ requestId, pollUrlPath, request }) {
             const pollUrl = `${this.serverUrl}${pollUrlPath.replace(/^\//, '')}`;
-            
+
             return this.pollingManager.poll(
                 async () => {
-                    const response = await fetch(pollUrl);
+                    const response = await fetch(pollUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        }
+                    });
                     if (!response.ok) {
                         const body = await response.json().catch(() => ({}));
                         if (response.status === 500 && body.error === "No response exists. Polling timed out") {
