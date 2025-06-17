@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 from typing import Optional
 
 import httpx
@@ -8,6 +9,70 @@ from syft_core import Client
 from syft_event.server2 import SyftEvents
 from syft_event.types import Request as SyftEventRequest
 from syft_event.types import Response
+
+MAX_HTTP_TIMEOUT_SECONDS = 30
+
+
+class EventLoopManager:
+    def __init__(self):
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._thread: Optional[threading.Thread] = None
+        self._stop_event = threading.Event()
+
+    def start(self) -> None:
+        def run_event_loop():
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+
+            async def check_stop():
+                while not self._stop_event.is_set():
+                    await asyncio.sleep(0.1)
+
+            self._loop.run_until_complete(check_stop())
+
+        self._thread = threading.Thread(target=run_event_loop, daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop_event.set()
+        if self._loop and self._loop.is_running():
+            self._loop.call_soon_threadsafe(self._loop.stop)
+
+    @property
+    def loop(self) -> Optional[asyncio.AbstractEventLoop]:
+        return self._loop
+
+
+class HTTPForwarder:
+    def __init__(self, client: httpx.AsyncClient, event_loop: EventLoopManager):
+        self.client = client
+        self.event_loop = event_loop
+
+    def forward(self, request: SyftEventRequest, path: str) -> httpx.Response:
+        if not self.event_loop.loop:
+            raise RuntimeError("Event loop not initialized")
+
+        method = self._get_method(request)
+        headers = self._prepare_headers(request)
+
+        coro = self.client.request(
+            method=method,
+            url=path,
+            content=request.body,
+            headers=headers,
+            params=request.url.query or None,
+        )
+
+        future = asyncio.run_coroutine_threadsafe(coro, self.event_loop.loop)
+        return future.result(timeout=MAX_HTTP_TIMEOUT_SECONDS)
+
+    def _get_method(self, request: SyftEventRequest) -> str:
+        return str(request.method) if request.method else "POST"
+
+    def _prepare_headers(self, request: SyftEventRequest) -> dict:
+        headers = request.headers or {}
+        headers["X-Syft-URL"] = str(request.url)
+        return headers
 
 
 class SyftHTTPBridge:
@@ -20,15 +85,25 @@ class SyftHTTPBridge:
     ):
         self.syft_events = SyftEvents(app_name, client=syftbox_client)
         self.included_endpoints = included_endpoints
-        self.app_client = http_client
+        self.event_loop = EventLoopManager()
+        self.http_forwarder = HTTPForwarder(http_client, self.event_loop)
 
     def start(self) -> None:
-        self.syft_events.start()
+        self.event_loop.start()
         self._register_rpc_handlers()
+        self.syft_events.start()
 
     async def aclose(self) -> None:
         self.syft_events.stop()
-        await self.app_client.aclose()
+        self.event_loop.stop()
+        await self.http_forwarder.client.aclose()
+
+    def __enter__(self) -> SyftHTTPBridge:
+        self.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await self.aclose()
 
     def _register_rpc_handlers(self) -> None:
         for endpoint in self.included_endpoints:
@@ -37,32 +112,9 @@ class SyftHTTPBridge:
     def _register_rpc_for_endpoint(self, endpoint: str) -> None:
         @self.syft_events.on_request(endpoint)
         def rpc_handler(request: SyftEventRequest) -> Response:
-            # TODO async support for syft-events
-            http_response = asyncio.run(self._forward_to_http(request, endpoint))
+            http_response = self.http_forwarder.forward(request, endpoint)
             return Response(
                 body=http_response.content,
                 status_code=http_response.status_code,
                 headers=dict(http_response.headers),
             )
-
-    async def _forward_to_http(
-        self, request: SyftEventRequest, path: str
-    ) -> httpx.Response:
-        method = "POST"
-        try:
-            method = str(request.method)  # type: ignore[attr-defined]
-        except Exception as e:
-            # TODO remove once the events library is fixed
-            print("Error getting method Defaulting to POST", e)
-            pass
-
-        headers = request.headers or {}
-        headers["X-Syft-URL"] = str(request.url)
-
-        return await self.app_client.request(
-            method=method,
-            url=path,
-            content=request.body,
-            headers=request.headers,
-            params=request.url.query or None,
-        )
