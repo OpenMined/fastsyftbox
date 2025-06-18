@@ -69,6 +69,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import httpx
 import pytest
 from syft_core import SyftClientConfig
+from syft_core.url import SyftBoxURL
 from syft_event.types import Request as SyftEventRequest
 
 from fastsyftbox import FastSyftBox
@@ -185,6 +186,9 @@ class TestNetworkFailures:
         mock_request.method = "POST"
         mock_request.body = b'{"test": "data"}'
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         with pytest.raises(httpx.ConnectError):
             await bridge._forward_to_http(mock_request, "/test")
@@ -213,6 +217,9 @@ class TestNetworkFailures:
         mock_request.method = "GET"
         mock_request.body = b""
         mock_request.headers = {}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         with pytest.raises(httpx.TimeoutException):
             await bridge._forward_to_http(mock_request, "/test")
@@ -246,6 +253,9 @@ class TestNetworkFailures:
         mock_request.method = "POST"
         mock_request.body = b'{"test": "data"}'
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         response = await bridge._forward_to_http(mock_request, "/test")
         assert response.status_code == 500
@@ -281,6 +291,9 @@ class TestNetworkFailures:
         mock_request.method = "POST"
         mock_request.body = b'{"test": "data"}'
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         response = await bridge._forward_to_http(mock_request, "/test")
         # Should still return the response even if content is malformed
@@ -320,6 +333,9 @@ class TestRPCRequestHandling:
         mock_request.method = None  # Missing method
         mock_request.body = b'{"test": "data"}'
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         # Should handle gracefully by defaulting to POST
         with patch.object(
@@ -347,6 +363,9 @@ class TestRPCRequestHandling:
         mock_request.method = "POST"
         mock_request.body = b'{"test": "data"}'
         mock_request.headers = None  # Invalid headers
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         with patch.object(
             bridge, "_forward_to_http", new_callable=AsyncMock
@@ -376,6 +395,9 @@ class TestRPCRequestHandling:
         mock_request.method = "POST"
         mock_request.body = large_body
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         mock_http_client.request.side_effect = httpx.RequestError("Request too large")
 
@@ -405,6 +427,9 @@ class TestRPCRequestHandling:
         mock_request.method = "POST"
         mock_request.body = b'{"test": "data"}'
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         response = asyncio.run(bridge._forward_to_http(mock_request, "/nonexistent"))
         assert response.status_code == 404
@@ -603,6 +628,9 @@ class TestRecoveryScenarios:
         mock_request.method = "POST"
         mock_request.body = b'{"test": "data"}'
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         # First call should fail
         with pytest.raises(httpx.ConnectError):

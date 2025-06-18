@@ -25,6 +25,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import httpx
 import pytest
+from syft_core.url import SyftBoxURL
 from syft_event.types import Request as SyftEventRequest
 from syft_event.types import Response
 
@@ -168,6 +169,7 @@ class TestSyftHTTPBridge:
         mock_request.method = "POST"
         mock_request.body = b'{"data": "test"}'
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL("syft://user@test.com/app_data/testapp/rpc/test/")
 
         # Create mock response
         mock_response = Mock(spec=httpx.Response)
@@ -185,7 +187,11 @@ class TestSyftHTTPBridge:
             method="POST",
             url="/test",
             content=b'{"data": "test"}',
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "X-Syft-URL": str(mock_request.url),
+            },
+            params=None,
         )
 
         assert response == mock_response
@@ -205,6 +211,9 @@ class TestSyftHTTPBridge:
 
         mock_request.body = b'{"data": "test"}'
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         # Create mock response
         mock_response = Mock(spec=httpx.Response)
@@ -223,7 +232,11 @@ class TestSyftHTTPBridge:
             method="POST",
             url="/test",
             content=b'{"data": "test"}',
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "X-Syft-URL": str(mock_request.url),
+            },
+            params=None,
         )
 
         mock_print.assert_called_once()
@@ -242,6 +255,9 @@ class TestSyftHTTPBridge:
             mock_request.method = method
             mock_request.body = b""
             mock_request.headers = {}
+            mock_request.url = SyftBoxURL(
+                "syft://user@test.com/app_data/pingpong/rpc/ping/"
+            )
 
             mock_response = Mock(spec=httpx.Response)
             mock_http_client.request.return_value = mock_response
@@ -304,6 +320,9 @@ class TestSyftHTTPBridge:
             "X-Custom-Header": "custom-value",
             "Accept": "application/json",
         }
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         mock_response = Mock(spec=httpx.Response)
         mock_http_client.request.return_value = mock_response
@@ -320,7 +339,9 @@ class TestSyftHTTPBridge:
                 "Authorization": "Bearer token123",
                 "X-Custom-Header": "custom-value",
                 "Accept": "application/json",
+                "X-Syft-URL": str(mock_request.url),
             },
+            params=None,
         )
 
     @pytest.mark.asyncio
@@ -330,6 +351,9 @@ class TestSyftHTTPBridge:
         mock_request.method = "GET"
         mock_request.body = b""
         mock_request.headers = {}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         mock_response = Mock(spec=httpx.Response)
         mock_http_client.request.return_value = mock_response
@@ -337,7 +361,11 @@ class TestSyftHTTPBridge:
         await http_bridge._forward_to_http(mock_request, "/test")
 
         mock_http_client.request.assert_called_once_with(
-            method="GET", url="/test", content=b"", headers={}
+            method="GET",
+            url="/test",
+            content=b"",
+            headers={"X-Syft-URL": "syft://user@test.com/app_data/pingpong/rpc/ping/"},
+            params=None,
         )
 
     @pytest.mark.asyncio
@@ -349,6 +377,9 @@ class TestSyftHTTPBridge:
         mock_request.method = "POST"
         mock_request.body = large_body
         mock_request.headers = {"Content-Type": "application/octet-stream"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         mock_response = Mock(spec=httpx.Response)
         mock_http_client.request.return_value = mock_response
@@ -359,7 +390,11 @@ class TestSyftHTTPBridge:
             method="POST",
             url="/upload",
             content=large_body,
-            headers={"Content-Type": "application/octet-stream"},
+            headers={
+                "Content-Type": "application/octet-stream",
+                "X-Syft-URL": str(mock_request.url),
+            },
+            params=None,
         )
 
     def test_multiple_endpoints_registration(self, mock_http_client, mock_syft_client):
@@ -411,6 +446,9 @@ class TestSyftHTTPBridge:
         mock_request.method = "POST"
         mock_request.body = b'{"data": "test"}'
         mock_request.headers = {"Content-Type": "application/json"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         # Simulate HTTP client failure
         mock_http_client.request.side_effect = httpx.RequestError("Connection failed")
@@ -425,6 +463,9 @@ class TestSyftHTTPBridge:
         mock_request.method = "GET"
         mock_request.body = b""
         mock_request.headers = {}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         # Simulate timeout
         mock_http_client.request.side_effect = httpx.TimeoutException(
@@ -471,6 +512,9 @@ class TestSyftHTTPBridge:
             mock_request.method = "POST"
             mock_request.body = f'{{"id": {i}}}'.encode()
             mock_request.headers = {"Content-Type": "application/json"}
+            mock_request.url = SyftBoxURL(
+                "syft://user@test.com/app_data/pingpong/rpc/ping/"
+            )
             requests.append(mock_request)
 
         # Mock responses
@@ -519,6 +563,9 @@ class TestSyftHTTPBridge:
         mock_request.method = "POST"
         mock_request.body = binary_data
         mock_request.headers = {"Content-Type": "image/png"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/ping/"
+        )
 
         mock_response = Mock(spec=httpx.Response)
         mock_response.content = b'{"upload_id": "12345"}'
@@ -533,7 +580,8 @@ class TestSyftHTTPBridge:
             method="POST",
             url="/upload",
             content=binary_data,
-            headers={"Content-Type": "image/png"},
+            headers={"Content-Type": "image/png", "X-Syft-URL": str(mock_request.url)},
+            params=None,
         )
         assert response == mock_response
 
@@ -548,6 +596,9 @@ class TestSyftHTTPBridge:
         mock_request.method = "POST"
         mock_request.body = unicode_content
         mock_request.headers = {"Content-Type": "application/json; charset=utf-8"}
+        mock_request.url = SyftBoxURL(
+            "syft://user@test.com/app_data/pingpong/rpc/unicode/"
+        )
 
         mock_response = Mock(spec=httpx.Response)
         mock_response.content = '{"status": "received 📨"}'.encode("utf-8")
@@ -562,7 +613,11 @@ class TestSyftHTTPBridge:
             method="POST",
             url="/unicode",
             content=unicode_content,
-            headers={"Content-Type": "application/json; charset=utf-8"},
+            headers={
+                "Content-Type": "application/json; charset=utf-8",
+                "X-Syft-URL": str(mock_request.url),
+            },
+            params=None,
         )
         assert response == mock_response
 

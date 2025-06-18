@@ -10,8 +10,11 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.routing import APIRoute
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
 from syft_core import Client as SyftboxClient
-from syft_core import SyftClientConfig
+from syft_core import SyftBoxURL, SyftClientConfig
 
 from .http_bridge import SyftHTTPBridge
 
@@ -41,6 +44,9 @@ class FastSyftBox(FastAPI):
 
         # Wrap user lifespan with bridge lifespan
         super().__init__(title=app_name, lifespan=self._combined_lifespan, **kwargs)
+
+        # Add middleware to inject syftbox dependencies into requests
+        self.add_middleware(BaseHTTPMiddleware, dispatch=self._inject_syftbox_deps)
 
     @asynccontextmanager
     async def _combined_lifespan(self, app: FastAPI):
@@ -156,20 +162,15 @@ class FastSyftBox(FastAPI):
             "{{ server_url }}",
             str(self.syftbox_config.server_url) or "https://syftboxdev.openmined.org/",
         )
-        content = content.replace("{{ from_email }}", "guest@syft.local")
+        content = content.replace("{{ from_email }}", self.syftbox_client.email)
         content = content.replace("{{ to_email }}", self.syftbox_client.email)
         content = content.replace("{{ app_name }}", self.app_name)
         content = content.replace("{{ app_endpoint }}", endpoint)
         content = content.replace("{{ request_body }}", str(example_request))
 
         default_headers = [
-            {"key": "x-syft-msg-type", "value": "request"},
-            {"key": "x-syft-from", "value": "guest@syft.local"},
-            {"key": "x-syft-to", "value": self.syftbox_client.email},
-            {"key": "x-syft-app", "value": self.app_name},
-            {"key": "x-syft-appep", "value": endpoint},
-            {"key": "x-syft-method", "value": "POST"},
-            {"key": "x-syft-timeout", "value": "5000"},
+            {"key": "x-syft-from", "value": self.syftbox_client.email},
+            {"key": "timeout", "value": "1000"},
             {"key": "Content-Type", "value": "application/json"},
         ]
 
@@ -232,3 +233,36 @@ class FastSyftBox(FastAPI):
                 url = f"{datasite_url}/public/{self.app_name}/rpc-debug.html"
                 html += f"<br /><a href='{url}'>Published RPC Debug</a>"
         return html
+
+    async def _inject_syftbox_deps(
+        self, request: Request, call_next: Callable
+    ) -> Response:
+        """
+        Middleware to inject syftbox client, syft events and syftbox rpc url
+        into the request state if the route has the "syftbox" tag.
+        """
+        # Find the route that matches the request URL
+        route = None
+        for r in self.routes:
+            if hasattr(r, "path") and r.path == request.url.path:
+                route = r
+                break
+        # If the route is an APIRoute, check its tags
+        tags = getattr(route, "tags", []) if route else []
+        if "syftbox" in tags:
+            # Inject syftbox client, syft events and syftbox url
+            setattr(request.state, "syftbox_client", self.syftbox_client)
+            setattr(
+                request.state,
+                "box_app",
+                self.bridge.syft_events if self.bridge else None,
+            )
+
+            # Inject the syftbox rpc url
+            url = request.headers.get("X-Syft-URL", None)
+            rpc_url = SyftBoxURL(url=url) if url else None
+            setattr(request.state, "syftbox_url", rpc_url)
+
+        response = await call_next(request)
+
+        return response

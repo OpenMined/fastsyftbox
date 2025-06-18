@@ -72,10 +72,11 @@ class TestAppTemplate:
             # Test run.sh permissions (skip execute check on Windows)
             run_sh = app_dir / "run.sh"
             assert run_sh.exists()
-            
+
             # Only check execute permissions on Unix systems
             import platform
-            if platform.system() != 'Windows':
+
+            if platform.system() != "Windows":
                 file_stat = run_sh.stat()
                 assert file_stat.st_mode & stat.S_IEXEC
 
