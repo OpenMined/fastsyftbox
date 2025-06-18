@@ -238,13 +238,13 @@ class FastSyftBox(FastAPI):
         self, request: Request, call_next: Callable
     ) -> Response:
         """
-        Middleware to inject syftbox client, syft events and syftbox rpc url into the request state
-        if the route has the "syftbox" tag.
+        Middleware to inject syftbox client, syft events and syftbox rpc url
+        into the request state if the route has the "syftbox" tag.
         """
         # Find the route that matches the request URL
         route = None
         for r in self.routes:
-            if r.path == request.url.path:
+            if hasattr(r, "path") and r.path == request.url.path:
                 route = r
                 break
         # If the route is an APIRoute, check its tags

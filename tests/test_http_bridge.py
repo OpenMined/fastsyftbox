@@ -364,7 +364,7 @@ class TestSyftHTTPBridge:
             method="GET",
             url="/test",
             content=b"",
-            headers={},
+            headers={"X-Syft-URL": "syft://user@test.com/app_data/pingpong/rpc/ping/"},
             params=None,
         )
 
