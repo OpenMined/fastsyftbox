@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Request
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from fastsyftbox import FastSyftBox
@@ -32,11 +33,28 @@ class MessageModel(BaseModel):
 
 # tags=syftbox means also available via Syft RPC
 # syft://{datasite}/app_data/{app_name}/rpc/endpoint
-@app.post("/hello", tags=["syftbox"])
-def hello_handler(request: MessageModel) -> JSONResponse:
-    print("got request", request)
-    response = MessageModel(message=f"Hi {request.name}", name="Bob")
-    return response.model_dump_json()
+@app.api_route(
+    path="/hello", methods=["GET", "POST", "PUT", "DELETE"], tags=["syftbox"]
+)
+async def hello_handler(request: Request) -> MessageModel:
+    try:
+        print("> Request Method: ", request.method)
+        print("> Request Body: ", await request.body())
+        if request.query_params:
+            print("> Query Params: ", request.query_params)
+        print("> SyftBox URL: ", request.state.syftbox_url)
+
+        if request.method == "POST":
+            msg = MessageModel(**await request.json())
+            name = msg.name
+        else:
+            name = request.query_params.get("name")
+
+        response = MessageModel(message=f"Hi {name}", name="Bob")
+        return response
+    except Exception as e:
+        print("Error", e)
+        raise e
 
 
 # Debug your Syft RPC endpoints in the browser
