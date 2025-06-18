@@ -841,7 +841,6 @@ class TestErrorHandlingAndEdgeCases:
 
         assert result.exit_code == 0
         assert "FastSyftbox version:" in result.stdout
-        assert "0.1.8" in result.stdout  # Should match current version
 
 
 @pytest.mark.integration

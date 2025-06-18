@@ -240,7 +240,7 @@
     class SyftBoxSDK {
         constructor(config = {}) {
             this.config = this.validateConfig({
-                serverUrl: CONSTANTS.DEFAULT_SERVER_URL,
+                serverUrl: "https://syftbox.net/",
                 autoResumeActiveRequests: true,
                 pollingInterval: CONSTANTS.DEFAULT_POLLING_INTERVAL,
                 maxPollAttempts: CONSTANTS.DEFAULT_MAX_POLL_ATTEMPTS,

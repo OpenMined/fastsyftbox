@@ -160,7 +160,7 @@ class FastSyftBox(FastAPI):
         content = content.replace("{{ js_rpc_debug }}", js_rpc_debug_tag)
         content = content.replace(
             "{{ server_url }}",
-            str(self.syftbox_config.server_url) or "https://syftboxdev.openmined.org/",
+            str(self.syftbox_config.server_url) or "https://syftbox.net/",
         )
         content = content.replace("{{ from_email }}", self.syftbox_client.email)
         content = content.replace("{{ to_email }}", self.syftbox_client.email)
