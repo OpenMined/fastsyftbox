@@ -16,6 +16,8 @@ from starlette.responses import Response
 from syft_core import Client as SyftboxClient
 from syft_core import SyftBoxURL, SyftClientConfig
 
+from fastsyftbox.constants import SYFT_FROM_HEADER, SYFT_URL_HEADER
+
 from .http_bridge import SyftHTTPBridge
 
 SYFT_DOCS_TAG = "syft_docs"
@@ -47,6 +49,10 @@ class FastSyftBox(FastAPI):
 
         # Add middleware to inject syftbox dependencies into requests
         self.add_middleware(BaseHTTPMiddleware, dispatch=self._inject_syftbox_deps)
+
+    @property
+    def app_dir(self) -> Path:
+        return self.syftbox_client.app_data(self.app_name)
 
     @asynccontextmanager
     async def _combined_lifespan(self, app: FastAPI):
@@ -169,7 +175,7 @@ class FastSyftBox(FastAPI):
         content = content.replace("{{ request_body }}", str(example_request))
 
         default_headers = [
-            {"key": "x-syft-from", "value": self.syftbox_client.email},
+            {"key": SYFT_FROM_HEADER, "value": self.syftbox_client.email},
             {"key": "timeout", "value": "1000"},
             {"key": "Content-Type", "value": "application/json"},
         ]
@@ -259,9 +265,12 @@ class FastSyftBox(FastAPI):
             )
 
             # Inject the syftbox rpc url
-            url = request.headers.get("X-Syft-URL", None)
+            url = request.headers.get(SYFT_URL_HEADER, None)
             rpc_url = SyftBoxURL(url=url) if url else None
             setattr(request.state, "syftbox_url", rpc_url)
+
+            sender = request.headers.get(SYFT_FROM_HEADER, None)
+            setattr(request.state, "sender", sender)
 
         response = await call_next(request)
 

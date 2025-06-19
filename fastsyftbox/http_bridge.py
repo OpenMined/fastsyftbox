@@ -10,6 +10,8 @@ from syft_event.server2 import SyftEvents
 from syft_event.types import Request as SyftEventRequest
 from syft_event.types import Response
 
+from fastsyftbox.constants import SYFT_FROM_HEADER, SYFT_URL_HEADER
+
 MAX_HTTP_TIMEOUT_SECONDS = 30
 
 
@@ -126,7 +128,10 @@ class SyftHTTPBridge:
     def _prepare_headers(self, request: SyftEventRequest) -> dict:
         """Prepare headers for HTTP request."""
         headers = request.headers or {}
-        headers["X-Syft-URL"] = str(request.url)
+        headers[SYFT_URL_HEADER] = str(request.url)
+        sender = getattr(request, "sender", None)
+        if sender:
+            headers[SYFT_FROM_HEADER] = str(sender)
         return headers
 
     def _register_rpc_handlers(self) -> None:
