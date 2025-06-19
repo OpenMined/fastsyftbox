@@ -147,7 +147,24 @@ class SyftHTTPBridge:
     def _register_rpc_for_endpoint(self, endpoint: str) -> None:
         @self.syft_events.on_request(endpoint)
         def rpc_handler(request: SyftEventRequest) -> Response:
-            http_response = asyncio.run(self._forward_to_http(request, endpoint))
+            loop = self.event_loop.loop
+            future = asyncio.run_coroutine_threadsafe(
+                self._forward_to_http(request, endpoint), loop
+            )
+
+            try:
+                http_response = future.result(timeout=5)
+
+            except Exception as e:
+                from traceback import format_exc
+
+                print(f"{format_exc()}\n{e}")
+                return Response(
+                    body=b"Internal server error",
+                    status_code=500,
+                    headers={},
+                )
+            # http_response = asyncio.run(self._forward_to_http(request, endpoint))
             res = Response(
                 body=http_response.content,
                 status_code=http_response.status_code,
