@@ -270,7 +270,7 @@ class FastSyftBox(FastAPI):
             setattr(request.state, "syftbox_url", rpc_url)
 
             sender = request.headers.get(SYFT_FROM_HEADER, None)
-            request.state.sender = sender
+            setattr(request.state, "sender", sender)
 
         response = await call_next(request)
 
