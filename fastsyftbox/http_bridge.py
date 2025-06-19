@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import threading
 from typing import Optional
 
@@ -9,6 +10,17 @@ from syft_core import Client
 from syft_event.server2 import SyftEvents
 from syft_event.types import Request as SyftEventRequest
 from syft_event.types import Response
+import uvicorn.logging
+
+handler = logging.StreamHandler()
+formatter = uvicorn.logging.DefaultFormatter(fmt="%(levelprefix)s %(message)s")
+handler.setFormatter(formatter)
+
+logger = logging.getLogger("syftbox.http_bridge")
+logger.setLevel(logging.INFO)
+logger.propagate = False
+logger.addHandler(handler)
+
 
 MAX_HTTP_TIMEOUT_SECONDS = 30
 
@@ -105,7 +117,6 @@ class SyftHTTPBridge:
         """Forward RPC request to HTTP endpoint."""
         method = self._get_method(request)
         headers = self._prepare_headers(request)
-
         response = await self.app_client.request(
             method=method,
             url=path,
@@ -136,9 +147,36 @@ class SyftHTTPBridge:
     def _register_rpc_for_endpoint(self, endpoint: str) -> None:
         @self.syft_events.on_request(endpoint)
         def rpc_handler(request: SyftEventRequest) -> Response:
-            http_response = asyncio.run(self._forward_to_http(request, endpoint))
-            return Response(
+            loop = self.event_loop.loop
+            future = asyncio.run_coroutine_threadsafe(
+                self._forward_to_http(request, endpoint), loop
+            )
+
+            try:
+                http_response = future.result(timeout=5)
+
+            except Exception as e:
+                from traceback import format_exc
+
+                print(f"{format_exc()}\n{e}")
+                return Response(
+                    body=b"Internal server error",
+                    status_code=500,
+                    headers={},
+                )
+            # http_response = asyncio.run(self._forward_to_http(request, endpoint))
+            res = Response(
                 body=http_response.content,
                 status_code=http_response.status_code,
                 headers=dict(http_response.headers),
             )
+            if http_response.status_code in [200, 201, 202, 204]:
+                logger.info(
+                    f"{request.method} {endpoint} syftrpc/1.0 {res.status_code}"
+                )
+            else:
+                logger.error(
+                    f"{request.method} {endpoint} syftrpc/1.0 {res.status_code}"
+                )
+
+            return res
