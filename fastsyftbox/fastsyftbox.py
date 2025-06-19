@@ -48,6 +48,10 @@ class FastSyftBox(FastAPI):
         # Add middleware to inject syftbox dependencies into requests
         self.add_middleware(BaseHTTPMiddleware, dispatch=self._inject_syftbox_deps)
 
+    @property
+    def app_dir(self) -> Path:
+        return self.syftbox_client.app_data(self.app_name)
+
     @asynccontextmanager
     async def _combined_lifespan(self, app: FastAPI):
         # Discover Syft-enabled routes and generate OpenAPI

@@ -127,6 +127,7 @@ class SyftHTTPBridge:
         """Prepare headers for HTTP request."""
         headers = request.headers or {}
         headers["X-Syft-URL"] = str(request.url)
+        headers["X-Syft-from"] = str(request.sender)
         return headers
 
     def _register_rpc_handlers(self) -> None:
