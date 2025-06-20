@@ -45,7 +45,8 @@ async def hello_handler(request: Request) -> MessageModel:
         print("> SyftBox URL: ", request.state.syftbox_url)
 
         if request.method == "POST":
-            msg = MessageModel(**await request.json())
+            json_data = await request.json()
+            msg = MessageModel(**json_data)
             name = msg.name
         else:
             name = request.query_params.get("name")
