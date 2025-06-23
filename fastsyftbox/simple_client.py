@@ -30,6 +30,7 @@ class SimpleRPCClient(httpx.Client):
                 raise ValueError("app_owner must be provided")
             else:
                 app_owner = DEV_DEFAULT_OWNER_EMAIL
+                self.app_owner = app_owner
 
         if data_dir is None:
             if app_name is None:

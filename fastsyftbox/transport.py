@@ -66,7 +66,6 @@ class SyftFileSystemTransport(BaseTransport):
 
         timeout_seconds = float(rpc.parse_duration(expiry).seconds)
         response = future.wait(timeout=timeout_seconds)
-        print(response)
         http_response = httpx.Response(
             status_code=response.status_code.value,
             headers=response.headers,
