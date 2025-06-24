@@ -22,12 +22,12 @@ class SyftFileSystemTransport(BaseTransport):
         app_owner: str,
         app_name: str,
         data_dir: Path,
-        user_email: str = "guest@syftbox.com",
+        sender_email: str = "guest@syftbox.com",
     ) -> None:
         self.app_owner = app_owner
         self.app_name = app_name
         self.data_dir = data_dir
-        self.user_email = user_email
+        self.sender_email = sender_email
 
         self.app_dir = self.data_dir / app_owner / "app_data" / app_name
         self.rpc_dir = self.app_dir / "rpc"
@@ -43,7 +43,7 @@ class SyftFileSystemTransport(BaseTransport):
             client_url=8002,  # does not matter
             path="",  # does not matter
             data_dir=self.data_dir,
-            email=self.user_email,
+            email=self.sender_email,
         )
 
         syftbox_client = SyftBoxClient(
