@@ -22,7 +22,7 @@ dependencies = [
     "fastapi>=0.115.12",
     "uvicorn>=0.34.2",
     "syft-event>=0.2.5",
-    "syft-core>=0.2.5",  # syft-event anyway depends on syft-core (so this should ideally not conflict!)
+    "syft-core>=0.2.5",  # syft-event anyway depends on syft-core (but we have a direct dep, so adding explicitly)
     "typer>=0.4.0",
     "httpx>=0.28.1",
 ]
