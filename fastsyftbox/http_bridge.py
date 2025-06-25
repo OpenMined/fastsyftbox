@@ -8,8 +8,6 @@ from syft_event.server2 import SyftEvents
 from syft_event.types import Request as SyftEventRequest
 from syft_event.types import Response
 
-MAX_HTTP_TIMEOUT_SECONDS = 30
-
 
 class SyftHTTPBridge:
     def __init__(
