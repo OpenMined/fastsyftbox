@@ -268,7 +268,8 @@ class TestSyftHTTPBridge:
             args, kwargs = mock_http_client.request.call_args
             assert kwargs["method"] == method
 
-    def test_rpc_handler_integration(
+    @pytest.mark.asyncio
+    async def test_rpc_handler_integration(
         self, http_bridge, mock_syft_events, mock_http_client
     ):
         """Test RPC handler creation and execution."""
@@ -278,10 +279,10 @@ class TestSyftHTTPBridge:
         mock_http_response.status_code = 200
         mock_http_response.headers = {"Content-Type": "application/json"}
 
-        # Mock asyncio.run to return our mock response
-        with patch("asyncio.run") as mock_run:
-            mock_run.return_value = mock_http_response
-
+        # Mock _forward_to_http method to return our mock response
+        with patch.object(
+            http_bridge, "_forward_to_http", return_value=mock_http_response
+        ):
             # Get the handler function that would be registered
             mock_decorator = Mock()
             mock_syft_events.on_request.return_value = mock_decorator
@@ -291,14 +292,17 @@ class TestSyftHTTPBridge:
             # Get the registered handler function
             handler_func = mock_decorator.call_args[0][0]
 
-            # Create mock request
+            # Create mock request with all required attributes
             mock_request = Mock(spec=SyftEventRequest)
             mock_request.method = "POST"
             mock_request.body = b'{"data": "test"}'
             mock_request.headers = {"Content-Type": "application/json"}
+            mock_request.url = SyftBoxURL(
+                "syft://user@test.com/app_data/testapp/rpc/test/"
+            )
 
             # Execute handler
-            response = handler_func(mock_request)
+            response = await handler_func(mock_request)
 
             # Verify response is properly constructed
             assert isinstance(response, Response)
@@ -475,7 +479,8 @@ class TestSyftHTTPBridge:
         with pytest.raises(httpx.TimeoutException):
             await http_bridge._forward_to_http(mock_request, "/slow-endpoint")
 
-    def test_response_header_conversion(self, http_bridge, mock_syft_events):
+    @pytest.mark.asyncio
+    async def test_response_header_conversion(self, http_bridge, mock_syft_events):
         """Test proper conversion of HTTP response headers to dict."""
         mock_http_response = Mock(spec=httpx.Response)
         mock_http_response.content = b'{"result": "success"}'
@@ -485,17 +490,26 @@ class TestSyftHTTPBridge:
         mock_headers = {"Content-Type": "application/json", "X-Custom": "value"}
         mock_http_response.headers = mock_headers
 
-        with patch("asyncio.run") as mock_run:
-            mock_run.return_value = mock_http_response
-
+        # Mock _forward_to_http method to return our mock response
+        with patch.object(
+            http_bridge, "_forward_to_http", return_value=mock_http_response
+        ):
             mock_decorator = Mock()
             mock_syft_events.on_request.return_value = mock_decorator
 
             http_bridge._register_rpc_for_endpoint("/test")
             handler_func = mock_decorator.call_args[0][0]
 
+            # Create mock request with all required attributes
             mock_request = Mock(spec=SyftEventRequest)
-            response = handler_func(mock_request)
+            mock_request.method = "POST"
+            mock_request.body = b'{"data": "test"}'
+            mock_request.headers = {"Content-Type": "application/json"}
+            mock_request.url = SyftBoxURL(
+                "syft://user@test.com/app_data/testapp/rpc/test/"
+            )
+
+            response = await handler_func(mock_request)
 
             # Verify headers are converted using dict()
             assert response.status_code == 201
@@ -669,24 +683,34 @@ class TestSyftHTTPBridge:
             mock_events.stop.assert_called_once()
             mock_http_client.aclose.assert_called_once()
 
-    def test_rpc_handler_with_empty_headers(self, http_bridge, mock_syft_events):
+    @pytest.mark.asyncio
+    async def test_rpc_handler_with_empty_headers(self, http_bridge, mock_syft_events):
         """Test RPC handler when HTTP response has empty headers."""
         mock_http_response = Mock(spec=httpx.Response)
         mock_http_response.content = b'{"result": "success"}'
         mock_http_response.status_code = 200
         mock_http_response.headers = {}  # Edge case: Empty headers
 
-        with patch("asyncio.run") as mock_run:
-            mock_run.return_value = mock_http_response
-
+        # Mock _forward_to_http method to return our mock response
+        with patch.object(
+            http_bridge, "_forward_to_http", return_value=mock_http_response
+        ):
             mock_decorator = Mock()
             mock_syft_events.on_request.return_value = mock_decorator
 
             http_bridge._register_rpc_for_endpoint("/test")
             handler_func = mock_decorator.call_args[0][0]
 
+            # Create mock request with all required attributes
             mock_request = Mock(spec=SyftEventRequest)
-            response = handler_func(mock_request)
+            mock_request.method = "POST"
+            mock_request.body = b'{"data": "test"}'
+            mock_request.headers = {"Content-Type": "application/json"}
+            mock_request.url = SyftBoxURL(
+                "syft://user@test.com/app_data/testapp/rpc/test/"
+            )
+
+            response = await handler_func(mock_request)
 
             # Verify response handles empty headers gracefully
             assert response.status_code == 200
