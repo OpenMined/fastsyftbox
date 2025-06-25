@@ -29,6 +29,7 @@ class SyftHTTPBridge:
 
     async def aclose(self) -> None:
         self.syft_events.stop()
+        await self.app_client.aclose()
 
     def __enter__(self) -> SyftHTTPBridge:
         self.start()
