@@ -2,6 +2,7 @@ import asyncio
 import json
 from pathlib import Path
 import time
+from typing import Optional, Union
 import urllib.parse
 import uuid
 
@@ -102,23 +103,23 @@ class PollingManager:
 
 
 class SyftBoxSDK:
-    def __init__(self, config: dict | None = None):
+    def __init__(self, config: Optional[dict] = None):
         if config is None:
             config = {}
         self.config = config
         self.server_url = config.get("serverUrl", CONSTANTS["DEFAULT_SERVER_URL"])
         self.polling_manager = PollingManager(config)
 
-    async def syft_fetch(self, syft_url: str, options: dict | None = None):
+    async def syft_fetch(self, syft_url: str, options: Optional[dict] = None):
         httpx_res, id = await self.syft_make_request(syft_url, options)
         return self.parse_httpx_res(httpx_res, id)
 
     async def syft_make_request(
         self,
         syft_url: str,
-        body: dict | None = None,
+        body: Optional[dict] = None,
         from_email: str = ANONYMOUS_EMAIL,
-        headers: dict | None = None,
+        headers: Optional[dict] = None,
         method: str = "POST",
     ):
         if headers is None:

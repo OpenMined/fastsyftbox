@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Self, Union
+from typing import Union
 
 import httpx
 from httpx import BaseTransport, Request, Response
@@ -33,7 +33,7 @@ class SyftFileSystemTransport(BaseTransport):
         self.rpc_dir = self.app_dir / "rpc"
 
     @classmethod
-    def from_config(cls, config_path: Path) -> Self:
+    def from_config(cls, config_path: Path) -> "SyftFileSystemTransport":
         pass
 
     def handle_request(self, request: Request) -> Response:
