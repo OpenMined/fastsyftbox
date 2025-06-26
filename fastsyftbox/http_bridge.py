@@ -39,7 +39,10 @@ class SyftHTTPBridge:
 
     def start(self) -> None:
         self._register_rpc_handlers()
-        self.syft_events.start()
+        try:
+            self.syft_events.start()
+        except Exception as e:
+            logger.error(f"Something failed while starting SyftEvents: {e}")
 
     async def aclose(self) -> None:
         self.syft_events.stop()
