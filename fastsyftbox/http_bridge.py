@@ -1,12 +1,24 @@
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 import httpx
+import uvicorn.logging
 from syft_core import Client
 from syft_event.server2 import SyftEvents
 from syft_event.types import Request as SyftEventRequest
 from syft_event.types import Response
+
+handler = logging.StreamHandler()
+formatter = uvicorn.logging.DefaultFormatter(fmt="%(levelprefix)s %(message)s")
+handler.setFormatter(formatter)
+
+logger = logging.getLogger("syftbox.http_bridge")
+logger.setLevel(logging.INFO)
+logger.propagate = False
+logger.addHandler(handler)
+
 
 from fastsyftbox.constants import SYFT_FROM_HEADER, SYFT_URL_HEADER
 
@@ -46,7 +58,6 @@ class SyftHTTPBridge:
         """Forward RPC request to HTTP endpoint."""
         method = self._get_method(request)
         headers = self._prepare_headers(request)
-
         response = await self.app_client.request(
             method=method,
             url=path,

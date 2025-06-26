@@ -65,7 +65,7 @@ class FastSyftBox(FastAPI):
 
         # app_client transports requests directly to the FastAPI app
         app_client = httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=app, raise_app_exceptions=False),
+            transport=httpx.ASGITransport(app=app, raise_app_exceptions=True),
             base_url="http://testserver",
         )
 

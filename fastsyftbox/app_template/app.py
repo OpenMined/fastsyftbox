@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from fastapi import Request
 from fastapi.responses import HTMLResponse
@@ -28,7 +29,7 @@ def root():
 
 class MessageModel(BaseModel):
     message: str
-    name: str | None = None
+    name: Optional[str] = None
 
 
 # tags=syftbox means also available via Syft RPC
