@@ -42,7 +42,9 @@ class SyftHTTPBridge:
         try:
             self.syft_events.start()
         except Exception as e:
-            logger.error(f"Something failed while starting SyftEvents: {e}")
+            logger.info(
+                f"Something failed while starting SyftEvents (app still started): {e}"
+            )
 
     async def aclose(self) -> None:
         self.syft_events.stop()
