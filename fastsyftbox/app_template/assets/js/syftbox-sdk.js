@@ -76,6 +76,7 @@
     class SyftRequest {
         constructor(id, requestData) {
             this.id = id;
+            this.requestId = null; // Will be set during polling
             this.requestData = requestData;
             this.status = 'PENDING';
             this.timestamp = Date.now();
@@ -386,8 +387,10 @@
                             'Accept': 'application/json'
                         }
                     });
+
+                    const body = await response.json().catch(() => ({}));
+
                     if (!response.ok) {
-                        const body = await response.json().catch(() => ({}));
                         if (response.status === 500 && body.error === "No response exists. Polling timed out") {
                             return null;
                         }
@@ -402,12 +405,28 @@
                         throw new SyftError(`Polling failed: ${response.status}`, 'POLLING_ERROR');
                     }
 
-                    const data = await response.json();
-                    if (data.status === 'pending') {
+                    // Handle 202 status with timeout error - continue polling
+                    if (response.status === 202 && body.error === 'timeout') {
+                        console.log(`Polling timeout for request ${requestId}, continuing to poll...`);
                         return null;
                     }
 
-                    return data.response || data;
+                    // Handle successful responses
+                    if (body.status === 'pending') {
+                        return null;
+                    }
+
+                    // Check if we have actual response data
+                    if (body.response || (!body.error && body.request_id)) {
+                        return body.response || body;
+                    }
+
+                    // If we get here with an error, it's a real error
+                    if (body.error) {
+                        throw new SyftError(`Polling error: ${body.message || body.error}`, 'POLLING_ERROR');
+                    }
+
+                    return body.response || body;
                 },
                 (attempt, maxAttempts) => request?.updatePollingProgress(attempt, maxAttempts)
             );
