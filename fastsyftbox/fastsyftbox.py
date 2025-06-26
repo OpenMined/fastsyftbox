@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import warnings
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncContextManager, Callable, Optional
@@ -19,6 +20,11 @@ from syft_core import SyftBoxURL, SyftClientConfig
 from fastsyftbox.constants import SYFT_FROM_HEADER, SYFT_URL_HEADER
 
 from .http_bridge import SyftHTTPBridge
+
+# Suppress duplicate operation ID warnings from FastAPI
+warnings.filterwarnings(
+    "ignore", message=".*duplicate operation ID.*", module="fastapi.openapi.utils"
+)
 
 SYFT_DOCS_TAG = "syft_docs"
 
