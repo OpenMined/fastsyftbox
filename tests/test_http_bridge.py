@@ -29,6 +29,7 @@ from syft_core.url import SyftBoxURL
 from syft_event.types import Request as SyftEventRequest
 from syft_event.types import Response
 
+from fastsyftbox.constants import SYFT_URL_HEADER
 from fastsyftbox.http_bridge import SyftHTTPBridge
 
 
@@ -189,7 +190,7 @@ class TestSyftHTTPBridge:
             content=b'{"data": "test"}',
             headers={
                 "Content-Type": "application/json",
-                "X-Syft-URL": str(mock_request.url),
+                SYFT_URL_HEADER: str(mock_request.url),
             },
             params=None,
         )
@@ -234,7 +235,7 @@ class TestSyftHTTPBridge:
             content=b'{"data": "test"}',
             headers={
                 "Content-Type": "application/json",
-                "X-Syft-URL": str(mock_request.url),
+                SYFT_URL_HEADER: str(mock_request.url),
             },
             params=None,
         )
@@ -343,7 +344,7 @@ class TestSyftHTTPBridge:
                 "Authorization": "Bearer token123",
                 "X-Custom-Header": "custom-value",
                 "Accept": "application/json",
-                "X-Syft-URL": str(mock_request.url),
+                SYFT_URL_HEADER: str(mock_request.url),
             },
             params=None,
         )
@@ -368,7 +369,9 @@ class TestSyftHTTPBridge:
             method="GET",
             url="/test",
             content=b"",
-            headers={"X-Syft-URL": "syft://user@test.com/app_data/pingpong/rpc/ping/"},
+            headers={
+                SYFT_URL_HEADER: "syft://user@test.com/app_data/pingpong/rpc/ping/"
+            },
             params=None,
         )
 
@@ -396,7 +399,7 @@ class TestSyftHTTPBridge:
             content=large_body,
             headers={
                 "Content-Type": "application/octet-stream",
-                "X-Syft-URL": str(mock_request.url),
+                SYFT_URL_HEADER: str(mock_request.url),
             },
             params=None,
         )
@@ -594,7 +597,10 @@ class TestSyftHTTPBridge:
             method="POST",
             url="/upload",
             content=binary_data,
-            headers={"Content-Type": "image/png", "X-Syft-URL": str(mock_request.url)},
+            headers={
+                "Content-Type": "image/png",
+                SYFT_URL_HEADER: str(mock_request.url),
+            },
             params=None,
         )
         assert response == mock_response
@@ -629,7 +635,7 @@ class TestSyftHTTPBridge:
             content=unicode_content,
             headers={
                 "Content-Type": "application/json; charset=utf-8",
-                "X-Syft-URL": str(mock_request.url),
+                SYFT_URL_HEADER: str(mock_request.url),
             },
             params=None,
         )
