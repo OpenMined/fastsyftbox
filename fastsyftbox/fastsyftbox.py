@@ -37,6 +37,7 @@ class FastSyftBox(FastAPI):
         lifespan: Optional[Callable[[Any], AsyncContextManager[None]]] = None,
         syftbox_endpoint_tags: Optional[list[str]] = None,
         include_syft_openapi: bool = True,
+        debug: bool = False,
         **kwargs,
     ):
         self.app_name = app_name
@@ -49,6 +50,7 @@ class FastSyftBox(FastAPI):
         self.syftbox_endpoint_tags = syftbox_endpoint_tags
         self.include_syft_openapi = include_syft_openapi
         self.current_dir = Path(__file__).parent
+        self.debug = debug
 
         # Wrap user lifespan with bridge lifespan
         super().__init__(title=app_name, lifespan=self._combined_lifespan, **kwargs)
@@ -83,6 +85,7 @@ class FastSyftBox(FastAPI):
             syftbox_client=self.syftbox_client,
         )
         self.bridge.start()
+        self.bridge.syft_events.set_debug_mode(self.debug)
 
         # Run user lifespan if provided
         if self.user_lifespan:
