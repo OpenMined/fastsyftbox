@@ -30,14 +30,42 @@ class DirectSyftboxTransport(httpx.BaseTransport):
 
         body = json.loads(request.content) if request.content else {}
 
-        try:
-            response, _ = asyncio.run(
-                sdk.syft_make_request(
-                    f"syft://{self.app_owner}/app_data/{self.app_name}/rpc/{request.url.path}",
-                    body=body,
-                    headers=headers,
-                    from_email=self.sender_email,
+        def make_syft_request_sync(
+            url: str, body: dict, headers: dict, from_email: str
+        ):
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = None
+
+            if loop and loop.is_running():
+                import nest_asyncio
+
+                nest_asyncio.apply()
+                return loop.run_until_complete(
+                    sdk.syft_make_request(
+                        url,
+                        body=body,
+                        headers=headers,
+                        from_email=from_email,
+                    )
                 )
+            else:
+                return asyncio.run(
+                    sdk.syft_make_request(
+                        url,
+                        body=body,
+                        headers=headers,
+                        from_email=from_email,
+                    )
+                )
+
+        try:
+            response, _ = make_syft_request_sync(
+                f"syft://{self.app_owner}/app_data/{self.app_name}/rpc/{request.url.path}",
+                body=body,
+                headers=headers,
+                from_email=self.sender_email,
             )
         except SyftTimeoutError as e:
             return httpx.Response(
