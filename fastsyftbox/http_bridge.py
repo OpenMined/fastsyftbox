@@ -23,6 +23,8 @@ logger.addHandler(handler)
 from fastsyftbox.constants import SYFT_FROM_HEADER, SYFT_URL_HEADER
 
 MAX_HTTP_TIMEOUT_SECONDS = 30
+MAX_RPC_MSG_TTL = "7d"
+RPC_MSG_CLEANUP_INTERVAL = "3h"
 
 
 class SyftHTTPBridge:
@@ -32,8 +34,16 @@ class SyftHTTPBridge:
         http_client: httpx.AsyncClient,
         included_endpoints: list[str],
         syftbox_client: Optional[Client] = None,
+        rpc_message_ttl: Optional[str] = None,
     ):
-        self.syft_events = SyftEvents(app_name, client=syftbox_client)
+        self.syft_events = SyftEvents(
+            app_name,
+            client=syftbox_client,
+            cleanup_expiry=rpc_message_ttl
+            if rpc_message_ttl is not None
+            else MAX_RPC_MSG_TTL,
+            cleanup_interval=RPC_MSG_CLEANUP_INTERVAL,
+        )
         self.included_endpoints = included_endpoints
         self.app_client = http_client  # Add the missing app_client attribute
 

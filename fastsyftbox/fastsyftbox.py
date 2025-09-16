@@ -37,6 +37,7 @@ class FastSyftBox(FastAPI):
         lifespan: Optional[Callable[[Any], AsyncContextManager[None]]] = None,
         syftbox_endpoint_tags: Optional[list[str]] = None,
         include_syft_openapi: bool = True,
+        rpc_message_ttl: Optional[str] = None,
         **kwargs,
     ):
         self.app_name = app_name
@@ -50,6 +51,10 @@ class FastSyftBox(FastAPI):
         self.include_syft_openapi = include_syft_openapi
         self.current_dir = Path(__file__).parent
         self.rpc_debug_enabled = kwargs.pop("rpc_debug_enabled", False)
+
+        # RPC message TTL, default to 7 days if not provided
+        # If a specific TTL is provided, use it; otherwise, fall back to the default
+        self.rpc_message_ttl = rpc_message_ttl
 
         # Wrap user lifespan with bridge lifespan
         super().__init__(title=app_name, lifespan=self._combined_lifespan, **kwargs)
@@ -82,6 +87,7 @@ class FastSyftBox(FastAPI):
             http_client=app_client,
             included_endpoints=syft_endpoints + syft_docs_endpoints,
             syftbox_client=self.syftbox_client,
+            rpc_message_ttl=self.rpc_message_ttl,
         )
         self.bridge.start()
         self.bridge.syft_events.set_debug_mode(self.rpc_debug_enabled)
