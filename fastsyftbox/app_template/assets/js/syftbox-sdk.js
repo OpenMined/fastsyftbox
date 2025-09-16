@@ -328,7 +328,7 @@
 
             try {
                 const rawParam = headers?.['x-syft-raw'] ? `&x-syft-raw=${headers['x-syft-raw']}` : '';
-                const msgUrl = `${this.serverUrl}api/v1/send/msg?x-syft-from=${fromEmail}&x-syft-url=${encodeURIComponent(syftUrl)}${rawParam}`;
+                const msgUrl = `${this.serverUrl}api/v1/send/msg?suffix-sender=true&x-syft-from=${fromEmail}&x-syft-url=${encodeURIComponent(syftUrl)}${rawParam}`;
 
                 const response = await fetch(msgUrl, {
                     method,
