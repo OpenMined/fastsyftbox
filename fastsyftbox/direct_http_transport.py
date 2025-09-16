@@ -148,7 +148,7 @@ class SyftBoxSDK:
         if not response.is_success:
             try:
                 body = response.json()
-            except:
+            except Exception:
                 body = {}
 
             if (
@@ -194,6 +194,7 @@ class SyftBoxSDK:
             )
             msg_url = (
                 f"{self.server_url}api/v1/send/msg?"
+                f"suffix-sender=true&"
                 f"x-syft-from={from_email}&"
                 f"x-syft-url={urllib.parse.quote(syft_url)}"
                 f"{raw_param}"
